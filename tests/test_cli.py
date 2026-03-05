@@ -77,9 +77,7 @@ class TestGenerateCommand:
 
         model = ProjectModel(name="test", root_path=str(tmp_path))
         data = model.model_dump(mode="json")
-        (codebase_dir / "project.json").write_text(
-            json.dumps(data, indent=2, default=str)
-        )
+        (codebase_dir / "project.json").write_text(json.dumps(data, indent=2, default=str))
 
         result = runner.invoke(app, ["generate", str(tmp_path), "--format", "badformat"])
         assert result.exit_code == 1
@@ -141,7 +139,9 @@ class TestDecisionsCommand:
         (tmp_path / ".codebase").mkdir()
 
         # Simulate interactive input: title, context, choice, alternatives, consequences
-        input_text = "Use PostgreSQL\nNeed a relational DB\nPostgreSQL\nMySQL, SQLite\nGood JSON support\n"
+        input_text = (
+            "Use PostgreSQL\nNeed a relational DB\nPostgreSQL\nMySQL, SQLite\nGood JSON support\n"
+        )
         result = runner.invoke(app, ["decisions", "add", str(tmp_path)], input=input_text)
         assert result.exit_code == 0
         assert "Done" in result.output or "recorded" in result.output.lower()
@@ -158,7 +158,9 @@ class TestDecisionsCommand:
             ["decisions", "remove", "99", "--path", str(tmp_path)],
         )
         # Either no decisions or invalid index
-        assert result.exit_code == 0 or "No decisions" in result.output or "Invalid" in result.output
+        assert (
+            result.exit_code == 0 or "No decisions" in result.output or "Invalid" in result.output
+        )
 
     def test_decisions_remove_with_force(self, tmp_path: Path) -> None:
         """Should remove a decision with --force flag."""

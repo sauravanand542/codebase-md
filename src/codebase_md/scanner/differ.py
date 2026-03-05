@@ -87,9 +87,7 @@ def compute_diff(old: ProjectModel, new: ProjectModel) -> DiffResult:
     dep_changes = _diff_dependencies(old, new)
     conv_changes = _diff_conventions(old, new)
 
-    arch_changed = (
-        old.architecture.architecture_type != new.architecture.architecture_type
-    )
+    arch_changed = old.architecture.architecture_type != new.architecture.architecture_type
     old_arch = old.architecture.architecture_type.value if arch_changed else None
     new_arch = new.architecture.architecture_type.value if arch_changed else None
 
@@ -214,9 +212,7 @@ def _diff_modules(old: ProjectModel, new: ProjectModel) -> list[ModuleChange]:
     return changes
 
 
-def _diff_dependencies(
-    old: ProjectModel, new: ProjectModel
-) -> list[DependencyChange]:
+def _diff_dependencies(old: ProjectModel, new: ProjectModel) -> list[DependencyChange]:
     """Compare dependencies between two scans.
 
     Args:
@@ -266,9 +262,7 @@ def _diff_dependencies(
     return changes
 
 
-def _diff_conventions(
-    old: ProjectModel, new: ProjectModel
-) -> list[ConventionChange]:
+def _diff_conventions(old: ProjectModel, new: ProjectModel) -> list[ConventionChange]:
     """Compare detected conventions between two scans.
 
     Args:
@@ -348,9 +342,7 @@ def format_diff(diff: DiffResult) -> str:
     lines: list[str] = ["## Changes Since Last Scan", ""]
 
     if diff.architecture_changed:
-        lines.append(
-            f"**Architecture:** {diff.old_architecture} → {diff.new_architecture}"
-        )
+        lines.append(f"**Architecture:** {diff.old_architecture} → {diff.new_architecture}")
         lines.append("")
 
     if diff.added_languages or diff.removed_languages:
@@ -364,9 +356,7 @@ def format_diff(diff: DiffResult) -> str:
     if diff.module_changes:
         lines.append("### Modules")
         for mc in diff.module_changes:
-            prefix = {"added": "+", "removed": "-", "modified": "~"}.get(
-                mc.change_type, "?"
-            )
+            prefix = {"added": "+", "removed": "-", "modified": "~"}.get(mc.change_type, "?")
             detail = f" — {mc.details}" if mc.details else ""
             lines.append(f"  {prefix} {mc.name}{detail}")
         lines.append("")
@@ -379,9 +369,7 @@ def format_diff(diff: DiffResult) -> str:
             elif dc.change_type == "removed":
                 lines.append(f"  - {dc.name} ({dc.old_version})")
             else:
-                lines.append(
-                    f"  ~ {dc.name}: {dc.old_version} → {dc.new_version}"
-                )
+                lines.append(f"  ~ {dc.name}: {dc.old_version} → {dc.new_version}")
         lines.append("")
 
     if diff.convention_changes:

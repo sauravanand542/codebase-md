@@ -223,11 +223,11 @@ def clean_version(version: str) -> str:
         Clean version number (e.g. '1.2.0').
     """
     # Remove common prefixes/operators
-    cleaned = re.sub(r'^[~^>=<!]+\s*', '', version.strip())
+    cleaned = re.sub(r"^[~^>=<!]+\s*", "", version.strip())
     # Take only the first version if comma-separated
     cleaned = cleaned.split(",")[0].strip()
     # Remove any remaining operators
-    cleaned = re.sub(r'^[>=<!]+\s*', '', cleaned)
+    cleaned = re.sub(r"^[>=<!]+\s*", "", cleaned)
     # Remove trailing wildcards
     cleaned = cleaned.rstrip(".*")
     return cleaned or version

@@ -74,25 +74,25 @@ _CHANGELOG_NAMES: list[str] = [
 
 # Regex patterns for changelog parsing
 _VERSION_HEADER_PATTERN = re.compile(
-    r'^#{1,3}\s+\[?v?(\d+\.\d+(?:\.\d+)?)\]?'  # ## [1.2.3] or ## 1.2.3 or ### v1.2.3
-    r'(?:\s*[-\u2013\u2014]\s*.*)?$',  # Optional date suffix (hyphen, en-dash, em-dash)
+    r"^#{1,3}\s+\[?v?(\d+\.\d+(?:\.\d+)?)\]?"  # ## [1.2.3] or ## 1.2.3 or ### v1.2.3
+    r"(?:\s*[-\u2013\u2014]\s*.*)?$",  # Optional date suffix (hyphen, en-dash, em-dash)
     re.MULTILINE,
 )
 
 _BREAKING_KEYWORDS = re.compile(
-    r'\b(?:BREAKING|breaking\s+change|REMOVED|removed|backwards?\s*incompatible'
-    r'|migrate|migration\s+required|no\s+longer\s+support)'
-    r'\b',
+    r"\b(?:BREAKING|breaking\s+change|REMOVED|removed|backwards?\s*incompatible"
+    r"|migrate|migration\s+required|no\s+longer\s+support)"
+    r"\b",
     re.IGNORECASE,
 )
 
 _DEPRECATION_KEYWORDS = re.compile(
-    r'\b(?:deprecated?|deprecating|will\s+be\s+removed|obsolete)\b',
+    r"\b(?:deprecated?|deprecating|will\s+be\s+removed|obsolete)\b",
     re.IGNORECASE,
 )
 
 _CATEGORY_HEADERS = re.compile(
-    r'^#{2,4}\s+(added|changed|deprecated|removed|fixed|security|breaking\s*changes?)\s*$',
+    r"^#{2,4}\s+(added|changed|deprecated|removed|fixed|security|breaking\s*changes?)\s*$",
     re.IGNORECASE | re.MULTILINE,
 )
 

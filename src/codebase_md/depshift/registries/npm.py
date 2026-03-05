@@ -69,23 +69,17 @@ async def fetch_package_info(
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.get(url)
     except httpx.HTTPError as e:
-        raise NpmRegistryError(
-            f"Failed to query npm for '{package_name}': {e}"
-        ) from e
+        raise NpmRegistryError(f"Failed to query npm for '{package_name}': {e}") from e
 
     if response.status_code == 404:
         raise NpmRegistryError(f"Package '{package_name}' not found on npm")
     if response.status_code != 200:
-        raise NpmRegistryError(
-            f"npm returned HTTP {response.status_code} for '{package_name}'"
-        )
+        raise NpmRegistryError(f"npm returned HTTP {response.status_code} for '{package_name}'")
 
     try:
         data = response.json()
     except ValueError as e:
-        raise NpmRegistryError(
-            f"Invalid JSON response from npm for '{package_name}': {e}"
-        ) from e
+        raise NpmRegistryError(f"Invalid JSON response from npm for '{package_name}': {e}") from e
 
     return _parse_npm_response(package_name, data)
 
@@ -113,23 +107,17 @@ def fetch_package_info_sync(
         with httpx.Client(timeout=timeout) as client:
             response = client.get(url)
     except httpx.HTTPError as e:
-        raise NpmRegistryError(
-            f"Failed to query npm for '{package_name}': {e}"
-        ) from e
+        raise NpmRegistryError(f"Failed to query npm for '{package_name}': {e}") from e
 
     if response.status_code == 404:
         raise NpmRegistryError(f"Package '{package_name}' not found on npm")
     if response.status_code != 200:
-        raise NpmRegistryError(
-            f"npm returned HTTP {response.status_code} for '{package_name}'"
-        )
+        raise NpmRegistryError(f"npm returned HTTP {response.status_code} for '{package_name}'")
 
     try:
         data = response.json()
     except ValueError as e:
-        raise NpmRegistryError(
-            f"Invalid JSON response from npm for '{package_name}': {e}"
-        ) from e
+        raise NpmRegistryError(f"Invalid JSON response from npm for '{package_name}': {e}") from e
 
     return _parse_npm_response(package_name, data)
 
@@ -224,6 +212,4 @@ def _parse_npm_response(
             deprecated=deprecated,
         )
     except (KeyError, TypeError, IndexError) as e:
-        raise NpmRegistryError(
-            f"Failed to parse npm response for '{package_name}': {e}"
-        ) from e
+        raise NpmRegistryError(f"Failed to parse npm response for '{package_name}': {e}") from e

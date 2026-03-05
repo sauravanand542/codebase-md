@@ -223,11 +223,7 @@ def _detect_architecture_type(root_path: Path, exclude: list[str]) -> Architectu
 
     # Check for generic monorepo pattern: multiple top-level dirs each with
     # their own package manifest (e.g. backend/ + frontend/, server/ + client/)
-    top_dirs_with_packages = [
-        d
-        for d in top_level_dirs
-        if _has_package_file(root_path / d)
-    ]
+    top_dirs_with_packages = [d for d in top_level_dirs if _has_package_file(root_path / d)]
     if len(top_dirs_with_packages) >= 2:
         return ArchitectureType.MONOREPO
 

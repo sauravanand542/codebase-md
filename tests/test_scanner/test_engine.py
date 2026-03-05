@@ -39,9 +39,7 @@ class TestScanProject:
         import yaml
 
         config = {"version": 1, "generators": ["claude"]}
-        (codebase_dir / "config.yaml").write_text(
-            yaml.dump(config), encoding="utf-8"
-        )
+        (codebase_dir / "config.yaml").write_text(yaml.dump(config), encoding="utf-8")
 
         scan_project(sample_python_project, persist=True)
         project_json = codebase_dir / "project.json"

@@ -371,9 +371,7 @@ def _analyze_js_ts_file(file_path: Path) -> FileInfo:
     )
 
 
-def _parse_js_ts_treesitter(
-    content: bytes, is_typescript: bool
-) -> tuple[list[str], list[str]]:
+def _parse_js_ts_treesitter(content: bytes, is_typescript: bool) -> tuple[list[str], list[str]]:
     """Parse a JS/TS file with tree-sitter to extract exports and imports.
 
     Args:
@@ -480,13 +478,9 @@ def _parse_js_ts_regex(content: str) -> tuple[list[str], list[str]]:
     imports: list[str] = []
 
     # Exports: export function/class/const
-    for match in re.finditer(
-        r"\bexport\s+(?:default\s+)?(?:function|class)\s+(\w+)", content
-    ):
+    for match in re.finditer(r"\bexport\s+(?:default\s+)?(?:function|class)\s+(\w+)", content):
         exports.append(match.group(1))
-    for match in re.finditer(
-        r"\bexport\s+(?:const|let|var)\s+(\w+)", content
-    ):
+    for match in re.finditer(r"\bexport\s+(?:const|let|var)\s+(\w+)", content):
         exports.append(match.group(1))
 
     # Imports: import ... from 'module'

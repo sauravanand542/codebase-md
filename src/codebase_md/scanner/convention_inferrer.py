@@ -231,9 +231,7 @@ def _detect_file_organization(root_path: Path, exclude: list[str]) -> str:
         src_dir = root_path / src_name
         if src_dir.is_dir():
             for item in src_dir.iterdir():
-                if item.is_dir() and not _should_exclude(
-                    item.relative_to(root_path), exclude
-                ):
+                if item.is_dir() and not _should_exclude(item.relative_to(root_path), exclude):
                     src_subdirs.add(item.name.lower())
 
     all_dirs = top_dirs | src_subdirs

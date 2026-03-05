@@ -14,7 +14,7 @@ from pathlib import Path
 # Marker comment to identify hooks managed by codebase-md
 HOOK_MARKER = "# codebase-md auto-generated hook — do not edit"
 
-HOOK_SCRIPT_TEMPLATE = '''#!/bin/sh
+HOOK_SCRIPT_TEMPLATE = """#!/bin/sh
 {marker}
 # Automatically re-scan and regenerate context files.
 # Installed by: codebase hooks install
@@ -22,7 +22,7 @@ HOOK_SCRIPT_TEMPLATE = '''#!/bin/sh
 
 # Run codebase-md scan + generate
 codebase scan "{root_path}" && codebase generate "{root_path}"
-'''
+"""
 
 
 class GitHooksError(Exception):
@@ -51,8 +51,7 @@ def _git_hooks_dir(root_path: Path) -> Path:
     git_dir = root_path / ".git"
     if not git_dir.is_dir():
         raise GitHooksError(
-            f"No .git/ directory found in {root_path}. "
-            "Initialize a git repository first: git init"
+            f"No .git/ directory found in {root_path}. Initialize a git repository first: git init"
         )
     hooks_dir = git_dir / "hooks"
     hooks_dir.mkdir(parents=True, exist_ok=True)

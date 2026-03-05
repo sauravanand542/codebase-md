@@ -662,7 +662,11 @@ def _extract_build_commands(
         # Try requirements.txt → pip install
         requirements_path = scan_dir / "requirements.txt"
         if requirements_path.is_file():
-            full_cmd = f"{prefix}pip install -r requirements.txt" if prefix else "pip install -r requirements.txt"
+            full_cmd = (
+                f"{prefix}pip install -r requirements.txt"
+                if prefix
+                else "pip install -r requirements.txt"
+            )
             if full_cmd not in seen_commands:
                 seen_commands.add(full_cmd)
                 commands.append(full_cmd)

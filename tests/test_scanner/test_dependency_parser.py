@@ -15,13 +15,13 @@ class TestParseDependencies:
     def test_parses_pyproject_toml(self, tmp_path: Path) -> None:
         """Should parse dependencies from pyproject.toml."""
         (tmp_path / "pyproject.toml").write_text(
-            '[project]\n'
+            "[project]\n"
             'name = "test"\n'
-            'dependencies = [\n'
+            "dependencies = [\n"
             '    "typer>=0.9.0",\n'
             '    "rich>=13.0.0",\n'
             '    "pydantic>=2.0.0",\n'
-            ']\n'
+            "]\n"
         )
         deps = parse_dependencies(tmp_path)
         assert len(deps) >= 3
@@ -31,9 +31,7 @@ class TestParseDependencies:
 
     def test_parses_requirements_txt(self, tmp_path: Path) -> None:
         """Should parse dependencies from requirements.txt."""
-        (tmp_path / "requirements.txt").write_text(
-            "flask==2.3.0\nrequests>=2.28.0\nnumpy\n"
-        )
+        (tmp_path / "requirements.txt").write_text("flask==2.3.0\nrequests>=2.28.0\nnumpy\n")
         deps = parse_dependencies(tmp_path)
         assert len(deps) >= 3
         names = [d.name for d in deps]
@@ -59,9 +57,7 @@ class TestParseDependencies:
 
     def test_npm_ecosystem(self, tmp_path: Path) -> None:
         """Should set ecosystem to npm for JS deps."""
-        (tmp_path / "package.json").write_text(
-            '{"dependencies": {"express": "^4.18.0"}}'
-        )
+        (tmp_path / "package.json").write_text('{"dependencies": {"express": "^4.18.0"}}')
         deps = parse_dependencies(tmp_path)
         assert all(d.ecosystem == "npm" for d in deps)
 
@@ -78,10 +74,7 @@ class TestParseDependencies:
     def test_deduplication(self, tmp_path: Path) -> None:
         """Should not return duplicate deps from multiple manifest files."""
         (tmp_path / "pyproject.toml").write_text(
-            '[project]\nname = "test"\n\n'
-            'dependencies = [\n'
-            '    "requests>=2.28.0",\n'
-            ']\n'
+            '[project]\nname = "test"\n\ndependencies = [\n    "requests>=2.28.0",\n]\n'
         )
         (tmp_path / "requirements.txt").write_text("requests>=2.28.0\n")
         deps = parse_dependencies(tmp_path)

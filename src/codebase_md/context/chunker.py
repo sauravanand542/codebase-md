@@ -477,64 +477,72 @@ def _build_build_run_chunk(model: ProjectModel) -> ContextChunk:
     langs_lower = [lang.lower() for lang in model.languages]
 
     if "python" in langs_lower:
-        lines.extend([
-            "```bash",
-            "# Install in dev mode",
-            "pip install -e '.[dev]'",
-            "",
-            "# Run tests",
-            "pytest",
-            "",
-            "# Lint",
-            "ruff check .",
-            "ruff format .",
-            "",
-            "# Type check",
-            "mypy src/",
-            "```",
-        ])
+        lines.extend(
+            [
+                "```bash",
+                "# Install in dev mode",
+                "pip install -e '.[dev]'",
+                "",
+                "# Run tests",
+                "pytest",
+                "",
+                "# Lint",
+                "ruff check .",
+                "ruff format .",
+                "",
+                "# Type check",
+                "mypy src/",
+                "```",
+            ]
+        )
     elif any(lang in langs_lower for lang in ("javascript", "typescript")):
-        lines.extend([
-            "```bash",
-            "# Install dependencies",
-            "npm install",
-            "",
-            "# Run tests",
-            "npm test",
-            "",
-            "# Development server",
-            "npm run dev",
-            "",
-            "# Build",
-            "npm run build",
-            "```",
-        ])
+        lines.extend(
+            [
+                "```bash",
+                "# Install dependencies",
+                "npm install",
+                "",
+                "# Run tests",
+                "npm test",
+                "",
+                "# Development server",
+                "npm run dev",
+                "",
+                "# Build",
+                "npm run build",
+                "```",
+            ]
+        )
     elif "go" in langs_lower:
-        lines.extend([
-            "```bash",
-            "# Build",
-            "go build ./...",
-            "",
-            "# Test",
-            "go test ./...",
-            "",
-            "# Lint",
-            "golangci-lint run",
-            "```",
-        ])
+        lines.extend(
+            [
+                "```bash",
+                "# Build",
+                "go build ./...",
+                "",
+                "# Test",
+                "go test ./...",
+                "",
+                "# Lint",
+                "golangci-lint run",
+                "```",
+            ]
+        )
     elif "rust" in langs_lower:
-        lines.extend([
-            "```bash",
-            "# Build",
-            "cargo build",
-            "",
-            "# Test",
-            "cargo test",
-            "",
-            "# Lint",
-            "cargo clippy",
-            "```",
-        ])
+        lines.extend(
+            [
+                "```bash",
+                "# Build",
+                "cargo build",
+                "",
+                "# Test",
+                "cargo test",
+                "",
+                "# Lint",
+                "cargo clippy",
+                "```",
+            ]
+        )
     else:
         lines.append("No language-specific build commands detected.")
 

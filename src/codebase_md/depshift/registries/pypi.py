@@ -67,23 +67,17 @@ async def fetch_package_info(
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.get(url)
     except httpx.HTTPError as e:
-        raise PyPIRegistryError(
-            f"Failed to query PyPI for '{package_name}': {e}"
-        ) from e
+        raise PyPIRegistryError(f"Failed to query PyPI for '{package_name}': {e}") from e
 
     if response.status_code == 404:
         raise PyPIRegistryError(f"Package '{package_name}' not found on PyPI")
     if response.status_code != 200:
-        raise PyPIRegistryError(
-            f"PyPI returned HTTP {response.status_code} for '{package_name}'"
-        )
+        raise PyPIRegistryError(f"PyPI returned HTTP {response.status_code} for '{package_name}'")
 
     try:
         data = response.json()
     except ValueError as e:
-        raise PyPIRegistryError(
-            f"Invalid JSON response from PyPI for '{package_name}': {e}"
-        ) from e
+        raise PyPIRegistryError(f"Invalid JSON response from PyPI for '{package_name}': {e}") from e
 
     return _parse_pypi_response(package_name, data)
 
@@ -111,23 +105,17 @@ def fetch_package_info_sync(
         with httpx.Client(timeout=timeout) as client:
             response = client.get(url)
     except httpx.HTTPError as e:
-        raise PyPIRegistryError(
-            f"Failed to query PyPI for '{package_name}': {e}"
-        ) from e
+        raise PyPIRegistryError(f"Failed to query PyPI for '{package_name}': {e}") from e
 
     if response.status_code == 404:
         raise PyPIRegistryError(f"Package '{package_name}' not found on PyPI")
     if response.status_code != 200:
-        raise PyPIRegistryError(
-            f"PyPI returned HTTP {response.status_code} for '{package_name}'"
-        )
+        raise PyPIRegistryError(f"PyPI returned HTTP {response.status_code} for '{package_name}'")
 
     try:
         data = response.json()
     except ValueError as e:
-        raise PyPIRegistryError(
-            f"Invalid JSON response from PyPI for '{package_name}': {e}"
-        ) from e
+        raise PyPIRegistryError(f"Invalid JSON response from PyPI for '{package_name}': {e}") from e
 
     return _parse_pypi_response(package_name, data)
 
@@ -151,9 +139,7 @@ def _parse_pypi_response(
     try:
         info = data.get("info", {})
         if not isinstance(info, dict):
-            raise PyPIRegistryError(
-                f"Unexpected 'info' format for '{package_name}'"
-            )
+            raise PyPIRegistryError(f"Unexpected 'info' format for '{package_name}'")
 
         releases = data.get("releases", {})
         if not isinstance(releases, dict):
@@ -201,6 +187,4 @@ def _parse_pypi_response(
             all_versions=all_versions,
         )
     except (KeyError, TypeError, IndexError) as e:
-        raise PyPIRegistryError(
-            f"Failed to parse PyPI response for '{package_name}': {e}"
-        ) from e
+        raise PyPIRegistryError(f"Failed to parse PyPI response for '{package_name}': {e}") from e

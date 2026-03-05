@@ -174,16 +174,22 @@ class TestEmptyRepo:
         subprocess.run(["git", "init"], cwd=tmp, capture_output=True, check=True)
         subprocess.run(
             ["git", "config", "user.email", "test@test.com"],
-            cwd=tmp, capture_output=True, check=True,
+            cwd=tmp,
+            capture_output=True,
+            check=True,
         )
         subprocess.run(
             ["git", "config", "user.name", "Test"],
-            cwd=tmp, capture_output=True, check=True,
+            cwd=tmp,
+            capture_output=True,
+            check=True,
         )
         subprocess.run(["git", "add", "."], cwd=tmp, capture_output=True, check=True)
         subprocess.run(
             ["git", "commit", "-m", "init"],
-            cwd=tmp, capture_output=True, check=True,
+            cwd=tmp,
+            capture_output=True,
+            check=True,
         )
         return _scan_and_validate(tmp)
 
@@ -230,6 +236,7 @@ class TestFastAPITemplate:
         yield path
         # Cleanup
         import shutil
+
         shutil.rmtree(path, ignore_errors=True)
 
     @pytest.fixture(scope="class")
@@ -292,6 +299,7 @@ class TestNextJSApp:
         path = _clone_repo(self.REPO_URL, depth=1)
         yield path
         import shutil
+
         shutil.rmtree(path, ignore_errors=True)
 
     @pytest.fixture(scope="class")
@@ -338,6 +346,7 @@ class TestDjango:
         path = _clone_repo(self.REPO_URL, depth=10)
         yield path
         import shutil
+
         shutil.rmtree(path, ignore_errors=True)
 
     @pytest.fixture(scope="class")
@@ -402,6 +411,7 @@ class TestGoCLI:
         path = _clone_repo(self.REPO_URL, depth=1)
         yield path
         import shutil
+
         shutil.rmtree(path, ignore_errors=True)
 
     @pytest.fixture(scope="class")
@@ -469,6 +479,7 @@ class TestRustCLI:
         path = _clone_repo(self.REPO_URL, depth=1)
         yield path
         import shutil
+
         shutil.rmtree(path, ignore_errors=True)
 
     @pytest.fixture(scope="class")
@@ -529,6 +540,7 @@ class TestRubyLibrary:
         path = _clone_repo(self.REPO_URL, depth=1)
         yield path
         import shutil
+
         shutil.rmtree(path, ignore_errors=True)
 
     @pytest.fixture(scope="class")
@@ -587,6 +599,7 @@ class TestTurborepo:
         path = _clone_repo(self.REPO_URL, depth=1)
         yield path
         import shutil
+
         shutil.rmtree(path, ignore_errors=True)
 
     @pytest.fixture(scope="class")
@@ -645,6 +658,7 @@ class TestExpressJS:
         path = _clone_repo(self.REPO_URL, depth=1)
         yield path
         import shutil
+
         shutil.rmtree(path, ignore_errors=True)
 
     @pytest.fixture(scope="class")

@@ -396,12 +396,13 @@ def _show_migration_plan(
         usage = usage_maps[0]
         for loc in usage.locations[:10]:  # Show max 10 locations
             console.print(
-                f"    ├── [dim]{loc.file_path}:{loc.line_number}[/dim]"
-                f"  → {loc.line_content[:60]}"
+                f"    ├── [dim]{loc.file_path}:{loc.line_number}[/dim]  → {loc.line_content[:60]}"
             )
         if len(usage.locations) > 10:
             console.print(f"    └── ... and {len(usage.locations) - 10} more locations")
-        console.print(f"\n  Files affected: [bold]{len(set(loc.file_path for loc in usage.locations))}[/bold]")
+        console.print(
+            f"\n  Files affected: [bold]{len(set(loc.file_path for loc in usage.locations))}[/bold]"
+        )
         console.print(f"  Import count:   [bold]{usage.import_count}[/bold]")
     else:
         console.print("    [dim]No direct imports found in source files.[/dim]")
@@ -499,7 +500,9 @@ def decisions_list(
         raise typer.Exit(code=1) from e
 
     if not records:
-        console.print("[yellow]No decisions recorded yet.[/yellow] Use [bold]codebase decisions add[/bold] to record one.")
+        console.print(
+            "[yellow]No decisions recorded yet.[/yellow] Use [bold]codebase decisions add[/bold] to record one."
+        )
         return
 
     table = Table(title=f"Architectural Decisions ({len(records)})", show_lines=True)
@@ -551,8 +554,7 @@ def decisions_remove(
 
     if index < 1 or index > len(records):
         console.print(
-            f"[bold red]Error:[/bold red] Invalid index {index}. "
-            f"Valid range: 1-{len(records)}."
+            f"[bold red]Error:[/bold red] Invalid index {index}. Valid range: 1-{len(records)}."
         )
         raise typer.Exit(code=1)
 
@@ -672,9 +674,7 @@ def watch(
                             pass
 
                     if generated:
-                        console.print(
-                            f"  [green]Regenerated:[/green] {', '.join(generated)}"
-                        )
+                        console.print(f"  [green]Regenerated:[/green] {', '.join(generated)}")
                 except StoreError:
                     console.print("  [red]Failed to regenerate.[/red]")
 
@@ -765,9 +765,7 @@ def hooks(
     resolved = path.resolve()
 
     if action == "install":
-        console.print(
-            f"[bold green]Installing[/bold green] git hooks in {resolved}"
-        )
+        console.print(f"[bold green]Installing[/bold green] git hooks in {resolved}")
         try:
             installed = install_all_hooks(resolved)
             if installed:
@@ -783,17 +781,13 @@ def hooks(
             raise typer.Exit(code=1) from e
 
     elif action == "remove":
-        console.print(
-            f"[bold red]Removing[/bold red] git hooks from {resolved}"
-        )
+        console.print(f"[bold red]Removing[/bold red] git hooks from {resolved}")
         try:
             removed = remove_all_hooks(resolved)
             if removed:
                 for hook_type in removed:
                     console.print(f"  [green]✓[/green] Removed {hook_type.value}")
-                console.print(
-                    f"\n[bold green]Done![/bold green] Removed {len(removed)} hook(s)."
-                )
+                console.print(f"\n[bold green]Done![/bold green] Removed {len(removed)} hook(s).")
             else:
                 console.print("[yellow]No codebase-md hooks found to remove.[/yellow]")
         except GitHooksError as e:
@@ -801,9 +795,7 @@ def hooks(
             raise typer.Exit(code=1) from e
 
     elif action == "status":
-        console.print(
-            f"[bold cyan]Hook status[/bold cyan] for {resolved}"
-        )
+        console.print(f"[bold cyan]Hook status[/bold cyan] for {resolved}")
         try:
             installed_hooks = list_installed_hooks(resolved)
             if installed_hooks:
@@ -862,9 +854,7 @@ def context(
     from codebase_md.persistence.store import ProjectNotFoundError, Store, StoreError
 
     resolved = path.resolve()
-    console.print(
-        f"[bold cyan]Routing context[/bold cyan] for: [italic]{query}[/italic]"
-    )
+    console.print(f"[bold cyan]Routing context[/bold cyan] for: [italic]{query}[/italic]")
 
     # Load project model
     try:
@@ -893,8 +883,7 @@ def context(
 
     if not result.chunks:
         console.print(
-            f"\n[yellow]No relevant context found[/yellow] for '{query}' "
-            f"(threshold: {min_score})"
+            f"\n[yellow]No relevant context found[/yellow] for '{query}' (threshold: {min_score})"
         )
         return
 

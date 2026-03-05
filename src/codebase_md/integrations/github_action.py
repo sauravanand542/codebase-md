@@ -75,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: {'write' if cfg.auto_commit else 'read'}
+      contents: {"write" if cfg.auto_commit else "read"}
 
     steps:
 {steps}"""
@@ -107,9 +107,7 @@ def write_workflow(root_path: Path, config: ActionConfig | None = None) -> Path:
         workflow_file.write_text(content, encoding="utf-8")
         return workflow_file
     except OSError as e:
-        raise GitHubActionError(
-            f"Failed to write workflow to {workflow_file}: {e}"
-        ) from e
+        raise GitHubActionError(f"Failed to write workflow to {workflow_file}: {e}") from e
 
 
 def _build_triggers(cfg: ActionConfig) -> str:
@@ -160,36 +158,23 @@ def _build_steps(cfg: ActionConfig) -> str:
         f"      - name: Set up Python {cfg.python_version}\n"
         "        uses: actions/setup-python@v5\n"
         "        with:\n"
-        f"          python-version: \"{cfg.python_version}\""
+        f'          python-version: "{cfg.python_version}"'
     )
 
     # Step 3: Install codebase-md
-    steps.append(
-        "      - name: Install codebase-md\n"
-        "        run: pip install codebase-md"
-    )
+    steps.append("      - name: Install codebase-md\n        run: pip install codebase-md")
 
     # Step 4: Scan
-    steps.append(
-        "      - name: Scan codebase\n"
-        "        run: codebase scan ."
-    )
+    steps.append("      - name: Scan codebase\n        run: codebase scan .")
 
     # Step 5: Generate
     format_list = " ".join(f"--format {f}" for f in cfg.formats) if cfg.formats else ""
     if format_list:
         # Generate each format individually
         gen_commands = "\n".join(f"          codebase generate . --format {f}" for f in cfg.formats)
-        steps.append(
-            "      - name: Generate context files\n"
-            "        run: |\n"
-            f"{gen_commands}"
-        )
+        steps.append(f"      - name: Generate context files\n        run: |\n{gen_commands}")
     else:
-        steps.append(
-            "      - name: Generate context files\n"
-            "        run: codebase generate ."
-        )
+        steps.append("      - name: Generate context files\n        run: codebase generate .")
 
     # Step 6: Auto-commit (optional)
     if cfg.auto_commit:
@@ -197,10 +182,10 @@ def _build_steps(cfg: ActionConfig) -> str:
         steps.append(
             "      - name: Commit generated files\n"
             "        run: |\n"
-            f"          git config --local user.email \"codebase-md[bot]@users.noreply.github.com\"\n"
-            f"          git config --local user.name \"codebase-md[bot]\"\n"
+            f'          git config --local user.email "codebase-md[bot]@users.noreply.github.com"\n'
+            f'          git config --local user.name "codebase-md[bot]"\n'
             f"          git add {files_to_add}\n"
-            "          git diff --staged --quiet || git commit -m \"docs: update context files [codebase-md]\"\n"
+            '          git diff --staged --quiet || git commit -m "docs: update context files [codebase-md]"\n'
             "          git push"
         )
 

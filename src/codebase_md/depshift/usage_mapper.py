@@ -57,9 +57,19 @@ _ECOSYSTEM_EXTENSIONS: dict[str, set[str]] = {
 
 # Default directories to skip
 _DEFAULT_EXCLUDES: set[str] = {
-    "node_modules", ".venv", "venv", "__pycache__", ".git",
-    "dist", "build", ".tox", ".mypy_cache", ".ruff_cache",
-    ".pytest_cache", "egg-info", ".eggs",
+    "node_modules",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".git",
+    "dist",
+    "build",
+    ".tox",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".pytest_cache",
+    "egg-info",
+    ".eggs",
 }
 
 
@@ -202,41 +212,53 @@ def _build_patterns(
 
         if ecosystem == "pypi":
             # Match: import X, from X import ..., from X.submod import ...
-            patterns.append((
-                name,
-                re.compile(rf'^import\s+{escaped_import}\b'),
-                "import",
-            ))
-            patterns.append((
-                name,
-                re.compile(rf'^from\s+{escaped_import}\b'),
-                "from_import",
-            ))
+            patterns.append(
+                (
+                    name,
+                    re.compile(rf"^import\s+{escaped_import}\b"),
+                    "import",
+                )
+            )
+            patterns.append(
+                (
+                    name,
+                    re.compile(rf"^from\s+{escaped_import}\b"),
+                    "from_import",
+                )
+            )
             # Also match the original name if different
             if import_name != name:
-                patterns.append((
-                    name,
-                    re.compile(rf'^import\s+{escaped}\b'),
-                    "import",
-                ))
-                patterns.append((
-                    name,
-                    re.compile(rf'^from\s+{escaped}\b'),
-                    "from_import",
-                ))
+                patterns.append(
+                    (
+                        name,
+                        re.compile(rf"^import\s+{escaped}\b"),
+                        "import",
+                    )
+                )
+                patterns.append(
+                    (
+                        name,
+                        re.compile(rf"^from\s+{escaped}\b"),
+                        "from_import",
+                    )
+                )
         elif ecosystem == "npm":
             # Match: import ... from 'X', require('X'), import 'X'
-            patterns.append((
-                name,
-                re.compile(rf"""(?:from\s+['"]|require\s*\(\s*['"]){escaped}(?:[/'"@])"""),
-                "import",
-            ))
+            patterns.append(
+                (
+                    name,
+                    re.compile(rf"""(?:from\s+['"]|require\s*\(\s*['"]){escaped}(?:[/'"@])"""),
+                    "import",
+                )
+            )
             # Also match exact package name at end of string
-            patterns.append((
-                name,
-                re.compile(rf"""(?:from\s+['"]|require\s*\(\s*['"]){escaped}['"]"""),
-                "import",
-            ))
+            patterns.append(
+                (
+                    name,
+                    re.compile(rf"""(?:from\s+['"]|require\s*\(\s*['"]){escaped}['"]"""),
+                    "import",
+                )
+            )
 
     return patterns
 

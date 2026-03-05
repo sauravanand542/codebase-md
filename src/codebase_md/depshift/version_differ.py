@@ -58,11 +58,7 @@ def compare_versions(current: str, latest: str) -> VersionDiffResult:
 
     major_diff = max(0, lat_parts[0] - cur_parts[0])
     minor_diff = max(0, lat_parts[1] - cur_parts[1]) if major_diff == 0 else 0
-    patch_diff = (
-        max(0, lat_parts[2] - cur_parts[2])
-        if major_diff == 0 and minor_diff == 0
-        else 0
-    )
+    patch_diff = max(0, lat_parts[2] - cur_parts[2]) if major_diff == 0 and minor_diff == 0 else 0
 
     is_behind = (
         cur_parts[0] < lat_parts[0]
@@ -114,7 +110,7 @@ def _parse_version(version: str) -> tuple[int, int, int]:
         Tuple of (major, minor, patch) integers.
     """
     # Strip pre-release suffixes
-    cleaned = re.split(r'[-+a-zA-Z]', version.strip())[0]
+    cleaned = re.split(r"[-+a-zA-Z]", version.strip())[0]
 
     parts = cleaned.split(".")
     try:
