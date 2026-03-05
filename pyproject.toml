@@ -104,7 +104,12 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = "tree_sitter.*"
+module = [
+    "tree_sitter.*",
+    "tree_sitter_python",
+    "tree_sitter_javascript",
+    "tree_sitter_typescript",
+]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
