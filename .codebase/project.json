@@ -1,0 +1,871 @@
+{
+  "name": "codebase-md",
+  "root_path": "/home/saurav/codebase-md",
+  "languages": [
+    "python"
+  ],
+  "architecture": {
+    "architecture_type": "cli_tool",
+    "entry_points": [
+      "src/codebase_md/cli.py"
+    ],
+    "services": [],
+    "has_frontend": false,
+    "has_backend": false,
+    "has_database": false,
+    "has_docker": false,
+    "has_ci": true
+  },
+  "modules": [
+    {
+      "name": "agents",
+      "path": "agents",
+      "purpose": "",
+      "files": [
+        {
+          "path": "agents/doc-writer.md",
+          "language": "unknown",
+          "exports": [],
+          "imports": [],
+          "purpose": ""
+        },
+        {
+          "path": "agents/tester.md",
+          "language": "unknown",
+          "exports": [],
+          "imports": [],
+          "purpose": ""
+        },
+        {
+          "path": "agents/security-reviewer.md",
+          "language": "unknown",
+          "exports": [],
+          "imports": [],
+          "purpose": ""
+        },
+        {
+          "path": "agents/code-reviewer.md",
+          "language": "unknown",
+          "exports": [],
+          "imports": [],
+          "purpose": ""
+        },
+        {
+          "path": "agents/planner.md",
+          "language": "unknown",
+          "exports": [],
+          "imports": [],
+          "purpose": ""
+        },
+        {
+          "path": "agents/architect.md",
+          "language": "unknown",
+          "exports": [],
+          "imports": [],
+          "purpose": ""
+        },
+        {
+          "path": "agents/orchestrator.md",
+          "language": "unknown",
+          "exports": [],
+          "imports": [],
+          "purpose": ""
+        },
+        {
+          "path": "agents/developer.md",
+          "language": "unknown",
+          "exports": [],
+          "imports": [],
+          "purpose": ""
+        }
+      ],
+      "language": null,
+      "framework": null
+    },
+    {
+      "name": "docs",
+      "path": "docs",
+      "purpose": "",
+      "files": [
+        {
+          "path": "docs/progress.md",
+          "language": "unknown",
+          "exports": [],
+          "imports": [],
+          "purpose": ""
+        }
+      ],
+      "language": null,
+      "framework": null
+    },
+    {
+      "name": "src",
+      "path": "src",
+      "purpose": "",
+      "files": [
+        {
+          "path": "src/codebase_md/__init__.py",
+          "language": "python",
+          "exports": [],
+          "imports": [],
+          "purpose": "database models"
+        },
+        {
+          "path": "src/codebase_md/cli.py",
+          "language": "python",
+          "exports": [
+            "app",
+            "console",
+            "main",
+            "init",
+            "scan",
+            "generate",
+            "deps",
+            "decisions_app",
+            "decisions_add",
+            "decisions_list",
+            "watch",
+            "diff",
+            "hooks",
+            "context"
+          ],
+          "imports": [
+            "pathlib",
+            "typing",
+            "typer",
+            "rich.console",
+            "codebase_md"
+          ],
+          "purpose": "database models"
+        },
+        {
+          "path": "src/codebase_md/generators/__init__.py",
+          "language": "python",
+          "exports": [
+            "get_registry",
+            "get_generator",
+            "AVAILABLE_FORMATS"
+          ],
+          "imports": [
+            "typing"
+          ],
+          "purpose": "database models"
+        },
+        {
+          "path": "src/codebase_md/generators/claude_md.py",
+          "language": "python",
+          "exports": [
+            "ClaudeMdGenerator"
+          ],
+          "imports": [
+            "typing",
+            "codebase_md.generators.base",
+            "codebase_md.model.project"
+          ],
+          "purpose": "type definitions"
+        },
+        {
+          "path": "src/codebase_md/generators/windsurf.py",
+          "language": "python",
+          "exports": [
+            "WindsurfGenerator"
+          ],
+          "imports": [
+            "typing",
+            "codebase_md.generators.base",
+            "codebase_md.model.project"
+          ],
+          "purpose": "type definitions"
+        },
+        {
+          "path": "src/codebase_md/generators/codex_md.py",
+          "language": "python",
+          "exports": [
+            "CodexMdGenerator"
+          ],
+          "imports": [
+            "typing",
+            "codebase_md.generators.base",
+            "codebase_md.model.project"
+          ],
+          "purpose": "type definitions"
+        },
+        {
+          "path": "src/codebase_md/generators/base.py",
+          "language": "python",
+          "exports": [
+            "GeneratorError",
+            "BaseGenerator"
+          ],
+          "imports": [
+            "abc",
+            "typing",
+            "codebase_md.model.project"
+          ],
+          "purpose": "database models"
+        },
+        {
+          "path": "src/codebase_md/generators/agents_md.py",
+          "language": "python",
+          "exports": [
+            "AgentsMdGenerator"
+          ],
+          "imports": [
+            "typing",
+            "codebase_md.generators.base",
+            "codebase_md.model.project"
+          ],
+          "purpose": "type definitions"
+        },
+        {
+          "path": "src/codebase_md/generators/generic_md.py",
+          "language": "python",
+          "exports": [
+            "GenericMdGenerator"
+          ],
+          "imports": [
+            "typing",
+            "codebase_md.generators.base",
+            "codebase_md.model.project"
+          ],
+          "purpose": "database models"
+        },
+        {
+          "path": "src/codebase_md/generators/cursorrules.py",
+          "language": "python",
+          "exports": [
+            "CursorRulesGenerator"
+          ],
+          "imports": [
+            "typing",
+            "codebase_md.generators.base",
+            "codebase_md.model.project"
+          ],
+          "purpose": "type definitions"
+        },
+        {
+          "path": "src/codebase_md/depshift/__init__.py",
+          "language": "python",
+          "exports": [],
+          "imports": [],
+          "purpose": "database models"
+        },
+        {
+          "path": "src/codebase_md/depshift/analyzer.py",
+          "language": "python",
+          "exports": [
+            "DepShiftAnalyzerError",
+            "HealthReport",
+            "HealthSummary",
+            "analyze_dependencies",
+            "analyze_single_dependency",
+            "clean_version"
+          ],
+          "imports": [
+            "re",
+            "codebase_md.depshift.registries.npm",
+            "codebase_md.depshift.registries.npm",
+            "codebase_md.depshift.registries.pypi",
+            "codebase_md.depshift.registries.pypi",
+            "codebase_md.depshift.version_differ",
+            "codebase_md.model.dependency"
+          ],
+          "purpose": "error handling"
+        },
+        {
+          "path": "src/codebase_md/depshift/version_differ.py",
+          "language": "python",
+          "exports": [
+            "VersionDiffError",
+            "VersionDiffResult",
+            "compare_versions",
+            "format_version_diff"
+          ],
+          "imports": [
+            "re",
+            "dataclasses"
+          ],
+          "purpose": "error handling"
+        },
+        {
+          "path": "src/codebase_md/depshift/changelog_parser.py",
+          "language": "python",
+          "exports": [
+            "ChangelogParseError",
+            "ChangelogEntry",
+            "ChangelogSummary",
+            "find_changelog",
+            "parse_changelog",
+            "extract_changes_between"
+          ],
+          "imports": [
+            "re",
+            "dataclasses",
+            "pathlib"
+          ],
+          "purpose": "error handling"
+        },
+        {
+          "path": "src/codebase_md/depshift/usage_mapper.py",
+          "language": "python",
+          "exports": [
+            "UsageMapperError",
+            "UsageLocation",
+            "DependencyUsageMap",
+            "map_dependency_usage",
+            "get_usage_file_paths"
+          ],
+          "imports": [
+            "re",
+            "dataclasses",
+            "pathlib"
+          ],
+          "purpose": "error handling"
+        },
+        {
+          "path": "src/codebase_md/depshift/registries/pypi.py",
+          "language": "python",
+          "exports": [
+            "PyPIRegistryError",
+            "PyPIPackageInfo",
+            "fetch_package_info",
+            "fetch_package_info_sync"
+          ],
+          "imports": [
+            "dataclasses",
+            "httpx"
+          ],
+          "purpose": "error handling"
+        },
+        {
+          "path": "src/codebase_md/depshift/registries/__init__.py",
+          "language": "python",
+          "exports": [],
+          "imports": [],
+          "purpose": ""
+        },
+        {
+          "path": "src/codebase_md/depshift/registries/npm.py",
+          "language": "python",
+          "exports": [
+            "NpmRegistryError",
+            "NpmPackageInfo",
+            "fetch_package_info",
+            "fetch_package_info_sync"
+          ],
+          "imports": [
+            "dataclasses",
+            "httpx"
+          ],
+          "purpose": "error handling"
+        },
+        {
+          "path": "src/codebase_md/scanner/__init__.py",
+          "language": "python",
+          "exports": [],
+          "imports": [],
+          "purpose": "database models"
+        },
+        {
+          "path": "src/codebase_md/scanner/ast_analyzer.py",
+          "language": "python",
+          "exports": [
+            "ASTAnalysisError",
+            "analyze_file",
+            "analyze_files"
+          ],
+          "imports": [
+            "re",
+            "pathlib",
+            "codebase_md.model.module",
+            "codebase_md.scanner.language_detector"
+          ],
+          "purpose": "API routes"
+        },
+        {
+          "path": "src/codebase_md/scanner/language_detector.py",
+          "language": "python",
+          "exports": [
+            "EXTENSION_MAP",
+            "FRAMEWORK_MARKERS",
+            "DEPENDENCY_MARKERS",
+            "DEFAULT_EXCLUDES",
+            "LanguageDetectionError",
+            "detect_languages",
+            "detect_frameworks",
+            "get_file_count"
+          ],
+          "imports": [
+            "pathlib"
+          ],
+          "purpose": "tests"
+        },
+        {
+          "path": "src/codebase_md/scanner/engine.py",
+          "language": "python",
+          "exports": [
+            "ScannerError",
+            "ScanResult",
+            "scan_project"
+          ],
+          "imports": [
+            "time",
+            "datetime",
+            "pathlib",
+            "codebase_md",
+            "codebase_md.model.architecture",
+            "codebase_md.model.convention",
+            "codebase_md.model.dependency",
+            "codebase_md.model.module",
+            "codebase_md.model.project",
+            "codebase_md.persistence.store",
+            "codebase_md.scanner.ast_analyzer",
+            "codebase_md.scanner.convention_inferrer",
+            "codebase_md.scanner.dependency_parser",
+            "codebase_md.scanner.git_analyzer",
+            "codebase_md.scanner.language_detector",
+            "codebase_md.scanner.structure_analyzer"
+          ],
+          "purpose": "error handling"
+        },
+        {
+          "path": "src/codebase_md/scanner/git_analyzer.py",
+          "language": "python",
+          "exports": [
+            "GitAnalysisError",
+            "FileActivity",
+            "GitInfo",
+            "analyze_git"
+          ],
+          "imports": [
+            "subprocess",
+            "dataclasses",
+            "pathlib"
+          ],
+          "purpose": "error handling"
+        },
+        {
+          "path": "src/codebase_md/scanner/structure_analyzer.py",
+          "language": "python",
+          "exports": [
+            "StructureAnalysisError",
+            "MONOREPO_MARKERS",
+            "ENTRY_POINT_NAMES",
+            "FRONTEND_INDICATORS",
+            "BACKEND_INDICATORS",
+            "DATABASE_INDICATORS",
+            "DOCKER_INDICATORS",
+            "CI_INDICATORS",
+            "analyze_structure"
+          ],
+          "imports": [
+            "pathlib",
+            "codebase_md.model.architecture",
+            "codebase_md.model.module",
+            "codebase_md.scanner.language_detector"
+          ],
+          "purpose": "database models"
+        },
+        {
+          "path": "src/codebase_md/scanner/convention_inferrer.py",
+          "language": "python",
+          "exports": [
+            "ConventionInferenceError",
+            "infer_conventions"
+          ],
+          "imports": [
+            "re",
+            "pathlib",
+            "codebase_md.model.convention",
+            "codebase_md.scanner.language_detector"
+          ],
+          "purpose": "utilities"
+        },
+        {
+          "path": "src/codebase_md/scanner/dependency_parser.py",
+          "language": "python",
+          "exports": [
+            "DependencyParseError",
+            "parse_dependencies"
+          ],
+          "imports": [
+            "json",
+            "re",
+            "collections.abc",
+            "pathlib",
+            "codebase_md.model.dependency"
+          ],
+          "purpose": "error handling"
+        },
+        {
+          "path": "src/codebase_md/model/__init__.py",
+          "language": "python",
+          "exports": [],
+          "imports": [
+            "codebase_md.model.architecture",
+            "codebase_md.model.convention",
+            "codebase_md.model.decision",
+            "codebase_md.model.dependency",
+            "codebase_md.model.module",
+            "codebase_md.model.project"
+          ],
+          "purpose": "API routes"
+        },
+        {
+          "path": "src/codebase_md/model/project.py",
+          "language": "python",
+          "exports": [
+            "ScanMetadata",
+            "ProjectModel"
+          ],
+          "imports": [
+            "datetime",
+            "pydantic",
+            "codebase_md.model.architecture",
+            "codebase_md.model.convention",
+            "codebase_md.model.decision",
+            "codebase_md.model.dependency",
+            "codebase_md.model.module"
+          ],
+          "purpose": "API routes"
+        },
+        {
+          "path": "src/codebase_md/model/decision.py",
+          "language": "python",
+          "exports": [
+            "DecisionRecord"
+          ],
+          "imports": [
+            "datetime",
+            "pydantic"
+          ],
+          "purpose": "database models"
+        },
+        {
+          "path": "src/codebase_md/model/convention.py",
+          "language": "python",
+          "exports": [
+            "NamingConvention",
+            "ImportStyle",
+            "ConventionSet"
+          ],
+          "imports": [
+            "enum",
+            "pydantic"
+          ],
+          "purpose": "database models"
+        },
+        {
+          "path": "src/codebase_md/model/module.py",
+          "language": "python",
+          "exports": [
+            "FileInfo",
+            "APIEndpoint",
+            "ModuleInfo"
+          ],
+          "imports": [
+            "pydantic"
+          ],
+          "purpose": "API routes"
+        },
+        {
+          "path": "src/codebase_md/model/architecture.py",
+          "language": "python",
+          "exports": [
+            "ArchitectureType",
+            "ServiceInfo",
+            "ArchitectureInfo"
+          ],
+          "imports": [
+            "enum",
+            "pydantic"
+          ],
+          "purpose": "API routes"
+        },
+        {
+          "path": "src/codebase_md/model/dependency.py",
+          "language": "python",
+          "exports": [
+            "DependencyHealth",
+            "DependencyInfo"
+          ],
+          "imports": [
+            "enum",
+            "pydantic"
+          ],
+          "purpose": "API routes"
+        },
+        {
+          "path": "src/codebase_md/persistence/__init__.py",
+          "language": "python",
+          "exports": [],
+          "imports": [],
+          "purpose": "database models"
+        },
+        {
+          "path": "src/codebase_md/persistence/store.py",
+          "language": "python",
+          "exports": [
+            "CODEBASE_DIR",
+            "CONFIG_FILE",
+            "PROJECT_FILE",
+            "DECISIONS_FILE",
+            "DEFAULT_CONFIG",
+            "StoreError",
+            "ConfigNotFoundError",
+            "ProjectNotFoundError",
+            "Store"
+          ],
+          "imports": [
+            "json",
+            "pathlib",
+            "yaml",
+            "codebase_md.model.project"
+          ],
+          "purpose": "data access"
+        },
+        {
+          "path": "src/codebase_md/persistence/decisions.py",
+          "language": "python",
+          "exports": [
+            "DecisionLogError",
+            "DecisionLog"
+          ],
+          "imports": [
+            "json",
+            "pathlib",
+            "codebase_md.model.decision",
+            "codebase_md.persistence.store"
+          ],
+          "purpose": "database models"
+        },
+        {
+          "path": "src/codebase_md/context/__init__.py",
+          "language": "python",
+          "exports": [],
+          "imports": [],
+          "purpose": "database models"
+        },
+        {
+          "path": "src/codebase_md/context/router.py",
+          "language": "python",
+          "exports": [
+            "RoutingError",
+            "RoutedContext",
+            "route_context",
+            "route_context_from_chunks",
+            "format_routed_context",
+            "format_routed_context_compact"
+          ],
+          "imports": [
+            "pydantic",
+            "codebase_md.context.chunker",
+            "codebase_md.context.ranker",
+            "codebase_md.model.project"
+          ],
+          "purpose": "API routes"
+        },
+        {
+          "path": "src/codebase_md/context/ranker.py",
+          "language": "python",
+          "exports": [
+            "RankingError",
+            "ScoredChunk",
+            "rank_chunks"
+          ],
+          "imports": [
+            "math",
+            "re",
+            "collections",
+            "pydantic",
+            "codebase_md.context.chunker"
+          ],
+          "purpose": "error handling"
+        },
+        {
+          "path": "src/codebase_md/context/chunker.py",
+          "language": "python",
+          "exports": [
+            "ChunkingError",
+            "ChunkTopic",
+            "ContextChunk",
+            "chunk_project"
+          ],
+          "imports": [
+            "enum",
+            "pydantic",
+            "codebase_md.model.project"
+          ],
+          "purpose": "error handling"
+        }
+      ],
+      "language": "python",
+      "framework": null
+    }
+  ],
+  "dependencies": [
+    {
+      "name": "typer",
+      "version": ">=0.9.0",
+      "latest": null,
+      "health": "unknown",
+      "health_score": 0.0,
+      "usage_locations": [],
+      "breaking_changes": [],
+      "ecosystem": "pypi"
+    },
+    {
+      "name": "rich",
+      "version": ">=13.0.0",
+      "latest": null,
+      "health": "unknown",
+      "health_score": 0.0,
+      "usage_locations": [],
+      "breaking_changes": [],
+      "ecosystem": "pypi"
+    },
+    {
+      "name": "pydantic",
+      "version": ">=2.0.0",
+      "latest": null,
+      "health": "unknown",
+      "health_score": 0.0,
+      "usage_locations": [],
+      "breaking_changes": [],
+      "ecosystem": "pypi"
+    },
+    {
+      "name": "pyyaml",
+      "version": ">=6.0",
+      "latest": null,
+      "health": "unknown",
+      "health_score": 0.0,
+      "usage_locations": [],
+      "breaking_changes": [],
+      "ecosystem": "pypi"
+    },
+    {
+      "name": "httpx",
+      "version": ">=0.25.0",
+      "latest": null,
+      "health": "unknown",
+      "health_score": 0.0,
+      "usage_locations": [],
+      "breaking_changes": [],
+      "ecosystem": "pypi"
+    },
+    {
+      "name": "pytest",
+      "version": ">=7.0.0",
+      "latest": null,
+      "health": "unknown",
+      "health_score": 0.0,
+      "usage_locations": [],
+      "breaking_changes": [],
+      "ecosystem": "pypi"
+    },
+    {
+      "name": "pytest-cov",
+      "version": ">=4.0.0",
+      "latest": null,
+      "health": "unknown",
+      "health_score": 0.0,
+      "usage_locations": [],
+      "breaking_changes": [],
+      "ecosystem": "pypi"
+    },
+    {
+      "name": "ruff",
+      "version": ">=0.4.0",
+      "latest": null,
+      "health": "unknown",
+      "health_score": 0.0,
+      "usage_locations": [],
+      "breaking_changes": [],
+      "ecosystem": "pypi"
+    },
+    {
+      "name": "mypy",
+      "version": ">=1.8.0",
+      "latest": null,
+      "health": "unknown",
+      "health_score": 0.0,
+      "usage_locations": [],
+      "breaking_changes": [],
+      "ecosystem": "pypi"
+    },
+    {
+      "name": "types-PyYAML",
+      "version": ">=6.0",
+      "latest": null,
+      "health": "unknown",
+      "health_score": 0.0,
+      "usage_locations": [],
+      "breaking_changes": [],
+      "ecosystem": "pypi"
+    },
+    {
+      "name": "tree-sitter",
+      "version": ">=0.21.0",
+      "latest": null,
+      "health": "unknown",
+      "health_score": 0.0,
+      "usage_locations": [],
+      "breaking_changes": [],
+      "ecosystem": "pypi"
+    },
+    {
+      "name": "tree-sitter-python",
+      "version": ">=0.21.0",
+      "latest": null,
+      "health": "unknown",
+      "health_score": 0.0,
+      "usage_locations": [],
+      "breaking_changes": [],
+      "ecosystem": "pypi"
+    },
+    {
+      "name": "tree-sitter-javascript",
+      "version": ">=0.21.0",
+      "latest": null,
+      "health": "unknown",
+      "health_score": 0.0,
+      "usage_locations": [],
+      "breaking_changes": [],
+      "ecosystem": "pypi"
+    },
+    {
+      "name": "tree-sitter-typescript",
+      "version": ">=0.21.0",
+      "latest": null,
+      "health": "unknown",
+      "health_score": 0.0,
+      "usage_locations": [],
+      "breaking_changes": [],
+      "ecosystem": "pypi"
+    }
+  ],
+  "conventions": {
+    "naming": "snake_case",
+    "file_org": "modular",
+    "import_style": "absolute",
+    "test_pattern": "",
+    "patterns_used": [
+      "model",
+      "module",
+      "router",
+      "view"
+    ]
+  },
+  "tech_debt": [],
+  "security": [],
+  "testing": [],
+  "decisions": [],
+  "api_surface": [],
+  "metadata": {
+    "scanned_at": "2026-03-05T05:00:01.136393Z",
+    "version": "0.1.0",
+    "git_sha": null,
+    "scan_duration": 0.253
+  }
+}

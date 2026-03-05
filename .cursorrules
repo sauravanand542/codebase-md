@@ -1,0 +1,55 @@
+# Project: codebase-md
+
+## Project Context
+
+`codebase-md` built with python (cli_tool architecture) with 3 module(s) and 14 dependencies.
+
+## Coding Rules
+
+- Use **mixed** naming convention
+- Use **mixed** imports
+- File organization: **flat**
+
+### Python Rules
+- All function signatures must have type hints
+- Use Google-style docstrings on all public functions and classes
+- Never use bare `except:`
+
+## Architecture
+
+- **Type:** cli_tool
+- **Entry points:** `src/codebase_md/cli.py`
+- **Infrastructure:** CI/CD
+
+## File Structure
+
+```
+agents/
+  agents/doc-writer.md
+  agents/tester.md
+  agents/security-reviewer.md
+  agents/code-reviewer.md
+  agents/planner.md
+  agents/architect.md
+  agents/orchestrator.md
+  agents/developer.md
+docs/
+  docs/progress.md
+src/
+  src/codebase_md/__init__.py
+  src/codebase_md/cli.py
+  src/codebase_md/generators/__init__.py
+  src/codebase_md/generators/claude_md.py
+  src/codebase_md/generators/windsurf.py
+  src/codebase_md/generators/codex_md.py
+  src/codebase_md/generators/base.py
+  src/codebase_md/generators/agents_md.py
+  src/codebase_md/generators/generic_md.py
+  src/codebase_md/generators/cursorrules.py
+  ... and 15 more files
+```
+
+## Tech Stack
+
+- **Languages:** python
+- **Key packages:** typer, rich, pydantic, pyyaml, httpx, pytest, pytest-cov, ruff, mypy, types-PyYAML, tree-sitter, tree-sitter-python, tree-sitter-javascript, tree-sitter-typescript
