@@ -1,6 +1,7 @@
 """CLI entry point."""
 
 import typer
+
 from my_cli.utils import format_greeting
 
 app = typer.Typer(help="My CLI tool")

@@ -1,7 +1,7 @@
 """FastAPI application entry point."""
 
-from fastapi import FastAPI
 from app.models import Item
+from fastapi import FastAPI
 
 app = FastAPI(title="My API")
 
