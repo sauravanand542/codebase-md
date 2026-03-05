@@ -386,11 +386,105 @@ depshift:
 
 ### Phase 8 — Hardening & PyPI (Broken into Sub-Phases)
 
-**8A — `decisions` CLI** — Wire decisions add/list/remove with DecisionLog + Rich
-**8B — `diff` CLI** — New `scanner/differ.py` + `DiffResult` model, compare current vs last scan
-**8C — `watch` CLI** — File watcher with `watchfiles`, debounced re-scan + regenerate
-**8D — Real-world testing** — Test on 5-10 diverse repos, fix bugs, create test fixtures
-**8E — Release & PyPI** — Security review, code review, version bump, CHANGELOG, tag + publish
+**8A — `decisions` CLI** — Wire decisions add/list/remove with DecisionLog + Rich ✅
+**8B — `diff` CLI** — New `scanner/differ.py` + `DiffResult` model, compare current vs last scan ✅
+**8C — `watch` CLI** — File watcher, debounced re-scan + regenerate ✅
+**8D — Generator Enrichment** — Enrich all 6 generators with descriptions, build commands, git insights, API surface, key files, module relationships, convention examples, testing/security/tech debt ✅
+**8E — Real-World Testing** — Test on 8-10 diverse repos via shallow clones, fix bugs, create regression fixtures (details below)
+**8F — Release & PyPI** — Security review, code review, version bump, CHANGELOG, tag + publish
+
+---
+
+## Phase 8E — Real-World Testing Plan
+
+### Approach: Shallow Clones (No Full Repos Needed)
+
+The scanner requires local filesystem access — every sub-scanner walks the file tree, reads manifests, parses source with tree-sitter, and runs `git` commands. **There is no remote scanning mode.**
+
+However, full clones are unnecessary:
+
+| Method | Lang Detection | Structure | Deps | AST | Git Insights | Speed |
+|--------|:-:|:-:|:-:|:-:|:-:|:-:|
+| `git clone --depth 1` | ✅ | ✅ | ✅ | ✅ | ⚠️ 1 commit | Seconds |
+| `git clone --depth 50` | ✅ | ✅ | ✅ | ✅ | ✅ Good | Seconds |
+| GitHub ZIP download | ✅ | ✅ | ✅ | ✅ | ❌ No .git | Fastest |
+| Full clone | ✅ | ✅ | ✅ | ✅ | ✅ Complete | Slow for large repos |
+
+**Use `git clone --depth 50` into a temp directory.** Fast, full scanner coverage, easy cleanup.
+
+### Test Repos (10 repos, covering all scanner paths)
+
+| # | Repo | Language | Architecture | Validates |
+|---|------|----------|-------------|-----------|
+| 1 | `codebase-md` itself | Python | cli_tool | Self-test, pyproject.toml, Python AST, snake_case |
+| 2 | `fastapi/full-stack-fastapi-template` | Python+TS | monolith | FastAPI detection, API endpoints, mixed-lang, Docker |
+| 3 | `create-next-app` output or Next.js example | TypeScript | monolith | package.json, TS AST, Next.js framework, camelCase |
+| 4 | `vercel/turborepo` starter | TypeScript | monorepo | Workspace detection, multiple packages, cross-module |
+| 5 | `django/django` | Python | library | Large repo perf (4000+ files), complex modules, many contributors |
+| 6 | `spf13/cobra-cli` | Go | cli_tool | Go detection, go.mod parsing |
+| 7 | `BurntSushi/ripgrep` | Rust | cli_tool | Rust detection, Cargo.toml parsing |
+| 8 | `heartcombo/devise` | Ruby | library | Ruby detection, Gemfile parsing |
+| 9 | `electron/electron-quick-start` | JS+HTML | monolith | Multiple languages, package.json, mixed conventions |
+| 10 | Empty repo (create locally) | — | — | Graceful degradation, no crash on empty |
+
+### Validation Matrix (per repo)
+
+| Check | What to Verify |
+|-------|---------------|
+| Languages | All detected, primary ranked first, framework found |
+| Architecture | Correct type (monolith / monorepo / library / cli_tool) |
+| Entry points | Real entry points found (main.py, index.ts, manage.py) |
+| Modules | Logical boundaries, not too many / too few |
+| Dependencies | All manifest deps parsed, versions correct, dep_type correct |
+| Conventions | Naming style, import style, file organization correct |
+| AST exports | Real function/class names, sensible purpose inference |
+| Git insights | Commits > 0, contributors found, hotspots non-empty |
+| Description | Meaningful text from README or manifest |
+| Build commands | Real commands (not generic fallbacks) |
+| Generator output | All 6 files non-empty, valid markdown, contain real data |
+
+### Test Execution Flow
+
+```
+For each test repo:
+  1. Shallow clone into temp dir (or use local for self-test)
+  2. codebase scan <path> → assert no errors
+  3. Assert ProjectModel: languages, architecture, deps, modules are correct
+  4. codebase generate <path> → assert all 6 files generated
+  5. Assert output contains real project data (not empty/generic)
+  6. codebase deps <path> --offline → assert dep table renders
+  7. Cleanup temp directory
+```
+
+### Expected Bug Categories
+
+| Category | Likely Issue | Fix |
+|----------|-------------|-----|
+| Large repos | AST analyzer slow on 4000+ files | Verify max_files=200 cap works |
+| Monorepos | Too many or too few modules detected | Tune structure_analyzer heuristics |
+| Framework detection | May miss Next.js, Django, Rails patterns | Add detection rules |
+| Go / Rust AST | tree-sitter grammars not installed | Verify regex fallback fires |
+| Ruby Gemfile | Edge cases (groups, git sources) | Fix parser |
+| Non-UTF8 files | Binary files crash AST analyzer | Verify UnicodeDecodeError caught |
+| Symlinks | Possible infinite loops in file walker | Add symlink detection |
+| Permissions | Unreadable files crash scanners | Verify PermissionError caught |
+
+### Regression Fixtures (created after testing)
+
+```
+tests/fixtures/
+├── python_cli/     # pyproject.toml, src/, tests/ (5 files)
+├── nextjs_app/     # package.json, pages/, next.config.js (5 files)
+├── fastapi_app/    # main.py, requirements.txt, routes/ (5 files)
+├── monorepo/       # packages/a/, packages/b/, root package.json (8 files)
+├── go_cli/         # go.mod, main.go, cmd/ (4 files)
+├── rust_cli/       # Cargo.toml, src/main.rs (3 files)
+├── mixed_lang/     # Python + JS in one repo (6 files)
+└── empty_repo/     # Just README.md (1 file)
+```
+
+Each fixture is tiny (3-10 files) and runs in normal `pytest` with no network.
+Integration tests (real clones) use `@pytest.mark.integration` and run separately.
 
 ---
 

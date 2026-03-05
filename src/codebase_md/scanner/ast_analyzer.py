@@ -198,6 +198,10 @@ def _analyze_python_file(file_path: Path) -> FileInfo:
     except OSError:
         return FileInfo(path=str(file_path))
 
+    # Skip binary files (contain null bytes)
+    if b"\x00" in content[:8192]:
+        return FileInfo(path=str(file_path), language="python")
+
     if len(content) > _MAX_FILE_SIZE:
         return FileInfo(path=str(file_path), language="python")
 
@@ -340,6 +344,10 @@ def _analyze_js_ts_file(file_path: Path) -> FileInfo:
 
     suffix = file_path.suffix.lower()
     language = EXTENSION_MAP.get(suffix, "javascript")
+
+    # Skip binary files (contain null bytes)
+    if b"\x00" in content[:8192]:
+        return FileInfo(path=str(file_path), language=language)
 
     if len(content) > _MAX_FILE_SIZE:
         return FileInfo(path=str(file_path), language=language)
@@ -546,12 +554,17 @@ def analyze_files(
     for file_path in root_path.rglob("*"):
         if not file_path.is_file():
             continue
+        if file_path.is_symlink():
+            continue
         relative = file_path.relative_to(root_path)
         if _should_exclude(relative, exclude_list):
             continue
         if file_path.suffix.lower() not in _PARSEABLE_EXTENSIONS:
             continue
-        if file_path.stat().st_size > _MAX_FILE_SIZE:
+        try:
+            if file_path.stat().st_size > _MAX_FILE_SIZE:
+                continue
+        except OSError:
             continue
 
         result = analyze_file(file_path)

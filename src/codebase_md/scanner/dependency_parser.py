@@ -19,14 +19,20 @@ class DependencyParseError(Exception):
     """Raised when dependency parsing fails."""
 
 
-def parse_dependencies(root_path: Path) -> list[DependencyInfo]:
+def parse_dependencies(
+    root_path: Path,
+    extra_dirs: list[Path] | None = None,
+) -> list[DependencyInfo]:
     """Parse all dependency files found in the project root.
 
     Scans for known dependency manifest files and extracts dependency
-    info from each one found.
+    info from each one found. Optionally scans additional directories
+    (e.g. monorepo sub-packages).
 
     Args:
         root_path: Root directory of the project to scan.
+        extra_dirs: Additional directories to scan for manifests
+            (e.g. monorepo sub-package paths).
 
     Returns:
         List of DependencyInfo instances from all parseable manifests.
@@ -66,6 +72,24 @@ def parse_dependencies(root_path: Path) -> list[DependencyInfo]:
             except DependencyParseError:
                 # Log but continue with other parsers
                 continue
+
+    # Scan extra directories (monorepo sub-packages)
+    if extra_dirs:
+        for extra_dir in extra_dirs:
+            if not extra_dir.is_dir():
+                continue
+            for filename, parser_fn in parsers:
+                manifest_path = extra_dir / filename
+                if manifest_path.is_file():
+                    try:
+                        deps = parser_fn(manifest_path)
+                        for dep in deps:
+                            key = f"{dep.ecosystem}:{dep.name}"
+                            if key not in seen_names:
+                                seen_names.add(key)
+                                all_deps.append(dep)
+                    except DependencyParseError:
+                        continue
 
     return all_deps
 
@@ -167,6 +191,8 @@ def _parse_pyproject_toml(path: Path) -> list[DependencyInfo]:
     """Parse dependencies from pyproject.toml.
 
     Extracts from [project.dependencies] and [project.optional-dependencies].
+    Uses tomllib (stdlib since Python 3.11) for reliable TOML parsing,
+    with regex fallback for malformed files.
 
     Args:
         path: Path to pyproject.toml file.
@@ -182,10 +208,79 @@ def _parse_pyproject_toml(path: Path) -> list[DependencyInfo]:
     except OSError as e:
         raise DependencyParseError(f"Cannot read {path}: {e}") from e
 
+    # Try tomllib first (reliable)
+    try:
+        import tomllib
+
+        data = tomllib.loads(content)
+        return _parse_pyproject_from_dict(data)
+    except Exception:
+        pass
+
+    # Fallback to regex for malformed files
+    return _parse_pyproject_regex(content)
+
+
+def _parse_pyproject_from_dict(data: dict) -> list[DependencyInfo]:  # type: ignore[type-arg]
+    """Parse dependencies from a parsed TOML dict.
+
+    Args:
+        data: Parsed TOML data.
+
+    Returns:
+        List of DependencyInfo instances.
+    """
+    deps: list[DependencyInfo] = []
+    dep_pattern = re.compile(
+        r"^([a-zA-Z0-9_][a-zA-Z0-9._-]*)"
+        r"(?:\[.*?\])?"
+        r"\s*([><=!~]+\s*[\d.]+.*)?"
+    )
+
+    project = data.get("project", {})
+
+    # Parse [project.dependencies]
+    for dep_str in project.get("dependencies", []):
+        match = dep_pattern.match(dep_str)
+        if match:
+            deps.append(
+                DependencyInfo(
+                    name=match.group(1),
+                    version=(match.group(2) or "*").strip(),
+                    ecosystem="pypi",
+                    dep_type="runtime",
+                )
+            )
+
+    # Parse [project.optional-dependencies]
+    optional = project.get("optional-dependencies", {})
+    for _group_name, group_deps in optional.items():
+        for dep_str in group_deps:
+            match = dep_pattern.match(dep_str)
+            if match:
+                deps.append(
+                    DependencyInfo(
+                        name=match.group(1),
+                        version=(match.group(2) or "*").strip(),
+                        ecosystem="pypi",
+                        dep_type="optional",
+                    )
+                )
+
+    return deps
+
+
+def _parse_pyproject_regex(content: str) -> list[DependencyInfo]:
+    """Parse dependencies from pyproject.toml content using regex (fallback).
+
+    Args:
+        content: pyproject.toml file content.
+
+    Returns:
+        List of DependencyInfo instances.
+    """
     deps: list[DependencyInfo] = []
 
-    # Parse dependencies using simple regex
-    # Matches lines like: "package>=1.0.0",
     dep_pattern = re.compile(
         r'"([a-zA-Z0-9_][a-zA-Z0-9._-]*)'  # package name inside quotes
         r"(?:\[.*?\])?"  # optional extras

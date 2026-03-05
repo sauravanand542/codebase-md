@@ -111,3 +111,7 @@ ignore_missing_imports = true
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-v --tb=short"
+collect_ignore_glob = ["tests/fixtures/**"]
+markers = [
+    "integration: marks tests that clone real repos (deselect with '-m not integration')",
+]

@@ -1,0 +1,13 @@
+{
+  "name": "@my/core",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "5.3.3"
+  }
+}

@@ -49,6 +49,8 @@ EXTENSION_MAP: dict[str, str] = {
     ".scss": "scss",
     ".sass": "sass",
     ".less": "less",
+    ".mjs": "javascript",
+    ".cjs": "javascript",
     ".sql": "sql",
     ".yml": "yaml",
     ".yaml": "yaml",
@@ -95,25 +97,6 @@ FRAMEWORK_MARKERS: dict[str, dict[str, str]] = {
     "docker-compose.yml": {"language": "yaml", "framework": "docker-compose"},
     "docker-compose.yaml": {"language": "yaml", "framework": "docker-compose"},
     "Dockerfile": {"language": "dockerfile", "framework": "docker"},
-}
-
-# Dependency file markers for language detection
-DEPENDENCY_MARKERS: dict[str, str] = {
-    "package.json": "javascript",
-    "requirements.txt": "python",
-    "pyproject.toml": "python",
-    "setup.py": "python",
-    "setup.cfg": "python",
-    "Pipfile": "python",
-    "Cargo.toml": "rust",
-    "go.mod": "go",
-    "Gemfile": "ruby",
-    "composer.json": "php",
-    "build.gradle": "java",
-    "pom.xml": "java",
-    "pubspec.yaml": "dart",
-    "mix.exs": "elixir",
-    "Package.swift": "swift",
 }
 
 DEFAULT_EXCLUDES: list[str] = [
@@ -199,17 +182,22 @@ def detect_languages(
 
     try:
         for file_path in root_path.rglob("*"):
-            if not file_path.is_file():
-                continue
+            try:
+                if not file_path.is_file():
+                    continue
+                if file_path.is_symlink():
+                    continue
 
-            relative = file_path.relative_to(root_path)
-            if _should_exclude(relative, exclude_list):
-                continue
+                relative = file_path.relative_to(root_path)
+                if _should_exclude(relative, exclude_list):
+                    continue
 
-            suffix = file_path.suffix.lower()
-            language = EXTENSION_MAP.get(suffix)
-            if language and language not in _NON_CODE_LANGUAGES:
-                language_counts[language] = language_counts.get(language, 0) + 1
+                suffix = file_path.suffix.lower()
+                language = EXTENSION_MAP.get(suffix)
+                if language and language not in _NON_CODE_LANGUAGES:
+                    language_counts[language] = language_counts.get(language, 0) + 1
+            except (PermissionError, OSError):
+                continue  # Skip individual unreadable files
     except PermissionError as e:
         raise LanguageDetectionError(f"Permission denied while scanning: {e}") from e
 
@@ -218,11 +206,18 @@ def detect_languages(
     return sorted_langs
 
 
-def detect_frameworks(root_path: Path) -> list[dict[str, str]]:
+def detect_frameworks(
+    root_path: Path,
+    extra_dirs: list[Path] | None = None,
+) -> list[dict[str, str]]:
     """Detect frameworks by checking for marker files in the project root.
+
+    Also checks extra directories (e.g. monorepo sub-packages) for
+    nested framework markers.
 
     Args:
         root_path: Root directory of the project to scan.
+        extra_dirs: Additional directories to check for framework markers.
 
     Returns:
         List of dicts with 'language' and 'framework' keys for each
@@ -242,10 +237,36 @@ def detect_frameworks(root_path: Path) -> list[dict[str, str]]:
         if (root_path / marker_file).exists():
             detected.append(info)
 
+    # Check extra directories for nested frameworks (monorepo sub-packages)
+    if extra_dirs:
+        for extra_dir in extra_dirs:
+            if not extra_dir.is_dir():
+                continue
+            for marker_file, info in FRAMEWORK_MARKERS.items():
+                if (extra_dir / marker_file).exists() and info not in detected:
+                    detected.append(info)
+            # Check nested package.json for JS/TS frameworks
+            nested_pkg = extra_dir / "package.json"
+            if nested_pkg.is_file():
+                _detect_js_framework(nested_pkg, detected)
+            # Check nested pyproject.toml for Python frameworks
+            nested_pyproject = extra_dir / "pyproject.toml"
+            if nested_pyproject.is_file():
+                _detect_python_framework(nested_pyproject, detected)
+            # Check nested requirements.txt for Python frameworks
+            nested_reqs = extra_dir / "requirements.txt"
+            if nested_reqs.is_file():
+                _detect_python_framework_requirements(nested_reqs, detected)
+
     # Check pyproject.toml for Python frameworks
     pyproject = root_path / "pyproject.toml"
     if pyproject.is_file():
         _detect_python_framework(pyproject, detected)
+
+    # Check requirements.txt for Python frameworks
+    requirements = root_path / "requirements.txt"
+    if requirements.is_file():
+        _detect_python_framework_requirements(requirements, detected)
 
     # Check package.json for JS/TS frameworks
     package_json = root_path / "package.json"
@@ -264,29 +285,56 @@ def _detect_python_framework(pyproject_path: Path, detected: list[dict[str, str]
     """
     try:
         content = pyproject_path.read_text(encoding="utf-8").lower()
-        python_frameworks = {
-            "fastapi": "fastapi",
-            "django": "django",
-            "flask": "flask",
-            "starlette": "starlette",
-            "typer": "typer",
-            "click": "click",
-            "celery": "celery",
-            "sqlalchemy": "sqlalchemy",
-            "pytest": "pytest",
-            "scrapy": "scrapy",
-            "tornado": "tornado",
-            "aiohttp": "aiohttp",
-            "sanic": "sanic",
-            "litestar": "litestar",
-        }
-        for dep, framework in python_frameworks.items():
-            if dep in content:
-                entry = {"language": "python", "framework": framework}
-                if entry not in detected:
-                    detected.append(entry)
+        _match_python_frameworks(content, detected)
     except OSError:
         pass  # Can't read file — skip
+
+
+def _detect_python_framework_requirements(
+    requirements_path: Path,
+    detected: list[dict[str, str]],
+) -> None:
+    """Detect Python frameworks from requirements.txt.
+
+    Args:
+        requirements_path: Path to requirements.txt.
+        detected: List to append detected frameworks to (mutated in place).
+    """
+    try:
+        content = requirements_path.read_text(encoding="utf-8").lower()
+        _match_python_frameworks(content, detected)
+    except OSError:
+        pass  # Can't read file — skip
+
+
+def _match_python_frameworks(content: str, detected: list[dict[str, str]]) -> None:
+    """Match known Python framework names against file content.
+
+    Args:
+        content: Lowercased file content to search.
+        detected: List to append detected frameworks to (mutated in place).
+    """
+    python_frameworks = {
+        "fastapi": "fastapi",
+        "django": "django",
+        "flask": "flask",
+        "starlette": "starlette",
+        "typer": "typer",
+        "click": "click",
+        "celery": "celery",
+        "sqlalchemy": "sqlalchemy",
+        "pytest": "pytest",
+        "scrapy": "scrapy",
+        "tornado": "tornado",
+        "aiohttp": "aiohttp",
+        "sanic": "sanic",
+        "litestar": "litestar",
+    }
+    for dep, framework in python_frameworks.items():
+        if dep in content:
+            entry = {"language": "python", "framework": framework}
+            if entry not in detected:
+                detected.append(entry)
 
 
 def _detect_js_framework(package_json_path: Path, detected: list[dict[str, str]]) -> None:
@@ -357,6 +405,8 @@ def get_file_count(root_path: Path, language: str, exclude: list[str] | None = N
 
     for file_path in root_path.rglob("*"):
         if not file_path.is_file():
+            continue
+        if file_path.is_symlink():
             continue
         relative = file_path.relative_to(root_path)
         if _should_exclude(relative, exclude_list):

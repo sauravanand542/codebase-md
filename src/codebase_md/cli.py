@@ -97,7 +97,7 @@ def scan(
     from codebase_md.scanner.engine import ScannerError, scan_project
 
     try:
-        result = scan_project(path.resolve(), persist=True)
+        result = scan_project(path.resolve(), persist=True, depth=depth)
     except ScannerError as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
         raise typer.Exit(code=1) from e

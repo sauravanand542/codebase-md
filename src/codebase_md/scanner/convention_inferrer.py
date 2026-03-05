@@ -710,12 +710,17 @@ def _collect_sample_files(root_path: Path, exclude: list[str]) -> list[Path]:
     for file_path in root_path.rglob("*"):
         if not file_path.is_file():
             continue
+        if file_path.is_symlink():
+            continue
         relative = file_path.relative_to(root_path)
         if _should_exclude(relative, exclude):
             continue
         if file_path.suffix.lower() not in _ANALYZABLE_EXTENSIONS:
             continue
-        if file_path.stat().st_size > _MAX_FILE_SIZE:
+        try:
+            if file_path.stat().st_size > _MAX_FILE_SIZE:
+                continue
+        except OSError:
             continue
         files.append(file_path)
         if len(files) >= _MAX_SAMPLE_FILES:

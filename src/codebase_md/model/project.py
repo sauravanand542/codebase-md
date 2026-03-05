@@ -81,6 +81,10 @@ class ProjectModel(BaseModel):
         default_factory=list,
         description="Programming languages detected in the project",
     )
+    frameworks: list[str] = Field(
+        default_factory=list,
+        description="Detected frameworks (e.g. fastapi, nextjs, django)",
+    )
     build_commands: list[str] = Field(
         default_factory=list,
         description="Actual build/test/lint commands extracted from project config",

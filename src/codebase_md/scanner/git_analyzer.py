@@ -170,7 +170,7 @@ def _get_file_change_counts(root_path: Path, max_files: int = 50) -> list[tuple[
         List of (file_path, commit_count) tuples.
     """
     result = _run_git(
-        ["log", "--pretty=format:", "--name-only", "--no-merges", "HEAD"],
+        ["log", "-n", "500", "--pretty=format:", "--name-only", "--no-merges", "HEAD"],
         root_path,
         timeout=30,
     )
@@ -200,6 +200,8 @@ def _get_recent_files(root_path: Path, days: int = 30) -> list[str]:
     result = _run_git(
         [
             "log",
+            "-n",
+            "200",
             f"--since={days} days ago",
             "--pretty=format:",
             "--name-only",
@@ -291,6 +293,12 @@ def analyze_git(root_path: Path) -> GitInfo | None:
             path=file_path,
             commit_count=count,
         )
+
+    # Enrich top hotspot files with contributor data
+    for file_path, _ in file_changes[:10]:
+        contributors_for_file = _get_file_contributors(root_path, file_path)
+        if file_path in file_activities and contributors_for_file:
+            file_activities[file_path].contributors = set(contributors_for_file)
 
     return GitInfo(
         total_commits=total_commits,

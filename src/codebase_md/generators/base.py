@@ -478,9 +478,11 @@ class BaseGenerator(ABC):
                     # Check if import references another module
                     for other_path, other_name in mod_paths.items():
                         if other_path != mod.path and (
-                            imp.startswith(other_path)
-                            or imp.startswith(other_name)
-                            or other_name in imp
+                            imp.startswith(other_path + "/")
+                            or imp.startswith(other_path + ".")
+                            or imp.startswith(other_name + ".")
+                            or imp.startswith(other_name + "/")
+                            or imp in (other_name, other_path)
                         ):
                             relationships.setdefault(mod.name, set()).add(other_name)
                             break

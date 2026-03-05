@@ -63,6 +63,7 @@ def scan_project(
     root_path: Path,
     exclude: list[str] | None = None,
     persist: bool = True,
+    depth: str = "full",
 ) -> ScanResult:
     """Run the full scanning pipeline on a project.
 
@@ -71,7 +72,7 @@ def scan_project(
     2. Structure analysis (architecture + modules)
     3. Dependency parsing
     4. Convention inference (tree-sitter + regex)
-    5. AST analysis (exports, imports, purpose)
+    5. AST analysis (exports, imports, purpose) — skipped in shallow mode
     6. Git history analysis (hotspots, contributors)
 
     Assembles results into a ProjectModel and optionally persists
@@ -81,6 +82,7 @@ def scan_project(
         root_path: Root directory of the project to scan.
         exclude: Directory/file names to skip. Uses defaults if None.
         persist: Whether to save results to .codebase/project.json.
+        depth: Scan depth — 'full' (default) or 'shallow' (skip AST).
 
     Returns:
         ScanResult containing the ProjectModel, warnings, and duration.
@@ -105,29 +107,51 @@ def scan_project(
     architecture, modules = _run_structure_analysis(root_path, exclude_list, warnings)
 
     # Step 3: Dependency Parsing
-    dependencies = _run_dependency_parsing(root_path, warnings)
+    # Always scan module directories for manifests (not just monorepo sub-packages).
+    # Many projects keep manifests in subdirectories (e.g. backend/requirements.txt,
+    # frontend/package.json) rather than at the project root.
+    from codebase_md.model.architecture import ArchitectureType as _ArchType
+
+    extra_scan_dirs: list[Path] = []
+    # Add module directories
+    for mod in modules:
+        mod_dir = root_path / mod.path
+        if mod_dir.is_dir() and mod_dir != root_path:
+            extra_scan_dirs.append(mod_dir)
+    # Add monorepo service directories (may differ from modules)
+    if architecture.architecture_type == _ArchType.MONOREPO and architecture.services:
+        for svc in architecture.services:
+            svc_dir = root_path / svc.path
+            if svc_dir.is_dir() and svc_dir not in extra_scan_dirs:
+                extra_scan_dirs.append(svc_dir)
+
+    scan_extra = extra_scan_dirs if extra_scan_dirs else None
+    dependencies = _run_dependency_parsing(root_path, warnings, extra_dirs=scan_extra)
 
     # Step 4: Framework enrichment (enrich language list with framework data)
-    _run_framework_detection(root_path, warnings)
+    frameworks_data = _run_framework_detection(root_path, warnings, extra_dirs=scan_extra)
+    frameworks = sorted({d["framework"] for d in frameworks_data if "framework" in d})
 
     # Step 5: Convention inference
     conventions = _run_convention_inference(root_path, exclude_list, warnings)
 
-    # Step 6: AST analysis (enrich modules with file-level data)
-    file_infos = _run_ast_analysis(root_path, exclude_list, warnings)
+    # Step 6: AST analysis (enrich modules with file-level data) — skip in shallow mode
+    if depth == "shallow":
+        file_infos: list[FileInfo] = []
+        warnings.append("AST analysis skipped (shallow scan mode)")
+    else:
+        file_infos = _run_ast_analysis(root_path, exclude_list, warnings)
     modules = _enrich_modules_with_ast(modules, file_infos)
 
     # Step 7: Git analysis
     git_info = _run_git_analysis(root_path, warnings)
-    git_sha = git_info.branch if git_info else _get_git_sha(root_path)
-    # Use actual git SHA, not branch name
     git_sha = _get_git_sha(root_path)
 
     # Step 8: Extract project description
     description = _extract_project_description(root_path, warnings)
 
     # Step 9: Extract real build/test/lint commands
-    build_commands = _extract_build_commands(root_path, languages, warnings)
+    build_commands = _extract_build_commands(root_path, languages, warnings, extra_dirs=scan_extra)
 
     # Step 10: Build git insights
     git_insights = _build_git_insights(git_info)
@@ -147,6 +171,7 @@ def scan_project(
         description=description,
         root_path=str(root_path),
         languages=languages,
+        frameworks=frameworks,
         build_commands=build_commands,
         architecture=architecture,
         modules=modules,
@@ -218,18 +243,20 @@ def _run_structure_analysis(
 def _run_dependency_parsing(
     root_path: Path,
     warnings: list[str],
+    extra_dirs: list[Path] | None = None,
 ) -> list[DependencyInfo]:
     """Run dependency parsing, capturing warnings on failure.
 
     Args:
         root_path: Project root.
         warnings: List to append warnings to.
+        extra_dirs: Additional directories for monorepo sub-packages.
 
     Returns:
         List of DependencyInfo instances.
     """
     try:
-        return parse_dependencies(root_path)
+        return parse_dependencies(root_path, extra_dirs=extra_dirs)
     except DependencyParseError as e:
         warnings.append(f"Dependency parsing failed: {e}")
         return []
@@ -353,18 +380,20 @@ def _run_git_analysis(
 def _run_framework_detection(
     root_path: Path,
     warnings: list[str],
+    extra_dirs: list[Path] | None = None,
 ) -> list[dict[str, str]]:
     """Run framework detection, capturing warnings on failure.
 
     Args:
         root_path: Project root.
         warnings: List to append warnings to.
+        extra_dirs: Additional directories for monorepo sub-packages.
 
     Returns:
         List of detected framework dicts.
     """
     try:
-        return detect_frameworks(root_path)
+        return detect_frameworks(root_path, extra_dirs=extra_dirs)
     except LanguageDetectionError as e:
         warnings.append(f"Framework detection failed: {e}")
         return []
@@ -438,7 +467,13 @@ def _extract_project_description(
         Project description string, or "" if not found.
     """
     # Try README.md first
-    for readme_name in ("README.md", "readme.md", "README.rst", "README"):
+    for readme_name in (
+        "README.md",
+        "readme.md",
+        "README.markdown",
+        "README.rst",
+        "README",
+    ):
         readme_path = root_path / readme_name
         if readme_path.is_file():
             try:
@@ -512,6 +547,10 @@ def _extract_readme_description(content: str) -> str:
         if stripped.startswith("[![") or stripped.startswith("!["):
             continue
 
+        # Skip link reference definitions like [name]: url
+        if stripped.startswith("[") and "]:" in stripped:
+            continue
+
         # Skip code blocks
         if stripped.startswith("```"):
             if paragraph_lines:
@@ -538,7 +577,7 @@ def _extract_readme_description(content: str) -> str:
 def _extract_pyproject_description(content: str) -> str:
     """Extract description from pyproject.toml content.
 
-    Looks for description = "..." in [project] section.
+    Uses tomllib for reliable parsing, with regex fallback.
 
     Args:
         content: pyproject.toml file content.
@@ -546,6 +585,18 @@ def _extract_pyproject_description(content: str) -> str:
     Returns:
         Description string, or "".
     """
+    # Try tomllib first
+    try:
+        import tomllib
+
+        data = tomllib.loads(content)
+        desc = data.get("project", {}).get("description", "")
+        if desc and isinstance(desc, str):
+            return str(desc.strip())
+    except Exception:
+        pass
+
+    # Regex fallback
     import re
 
     match = re.search(r'^description\s*=\s*"([^"]*)"', content, re.MULTILINE)
@@ -558,76 +609,115 @@ def _extract_build_commands(
     root_path: Path,
     languages: list[str],
     warnings: list[str],
+    extra_dirs: list[Path] | None = None,
 ) -> list[str]:
     """Extract actual build/test/lint commands from project configuration.
 
     Reads scripts from pyproject.toml, package.json, and Makefile to find
-    real commands rather than guessing from language.
+    real commands rather than guessing from language. Also scans module
+    directories (extra_dirs) for manifests.
 
     Args:
         root_path: Project root.
         languages: Detected languages.
         warnings: List to append warnings to.
+        extra_dirs: Additional directories to scan for manifests
+            (e.g. module paths like backend/, frontend/).
 
     Returns:
         List of command strings (e.g. "pytest", "npm test").
     """
     commands: list[str] = []
+    seen_commands: set[str] = set()
 
-    # Try pyproject.toml [project.scripts]
-    pyproject_path = root_path / "pyproject.toml"
-    if pyproject_path.is_file():
-        try:
-            content = pyproject_path.read_text(encoding="utf-8")
-            commands.extend(_extract_pyproject_commands(content, root_path))
-        except OSError:
-            pass
+    # Collect all directories to scan: root + extra_dirs
+    dirs_to_scan = [root_path]
+    if extra_dirs:
+        dirs_to_scan.extend(extra_dirs)
 
-    # Try package.json scripts
-    package_json = root_path / "package.json"
-    if package_json.is_file():
-        try:
-            import json
+    for scan_dir in dirs_to_scan:
+        if not scan_dir.is_dir():
+            continue
 
-            data = json.loads(package_json.read_text(encoding="utf-8"))
-            scripts = data.get("scripts", {})
-            if isinstance(scripts, dict):
-                for key in ("dev", "build", "test", "lint", "start", "format", "typecheck"):
-                    if key in scripts:
-                        commands.append(f"npm run {key}")
-        except (OSError, json.JSONDecodeError):
-            pass
+        # Compute prefix for subdirectory commands (e.g. "cd backend && ")
+        if scan_dir == root_path:
+            prefix = ""
+        else:
+            rel = scan_dir.relative_to(root_path)
+            prefix = f"cd {rel} && "
 
-    # Try Makefile targets
-    makefile_path = root_path / "Makefile"
-    if makefile_path.is_file():
-        try:
-            content = makefile_path.read_text(encoding="utf-8")
-            import re
+        # Try pyproject.toml [project.scripts]
+        pyproject_path = scan_dir / "pyproject.toml"
+        if pyproject_path.is_file():
+            try:
+                content = pyproject_path.read_text(encoding="utf-8")
+                for cmd in _extract_pyproject_commands(content, scan_dir):
+                    full_cmd = f"{prefix}{cmd}" if prefix else cmd
+                    if full_cmd not in seen_commands:
+                        seen_commands.add(full_cmd)
+                        commands.append(full_cmd)
+            except OSError:
+                pass
 
-            targets = re.findall(r"^([a-zA-Z_][a-zA-Z0-9_-]*):", content, re.MULTILINE)
-            useful_targets = [
-                t
-                for t in targets
-                if t
-                in (
-                    "build",
-                    "test",
-                    "lint",
-                    "format",
-                    "install",
-                    "dev",
-                    "run",
-                    "clean",
-                    "check",
-                    "deploy",
-                    "start",
-                )
-            ]
-            for t in useful_targets:
-                commands.append(f"make {t}")
-        except OSError:
-            pass
+        # Try requirements.txt → pip install
+        requirements_path = scan_dir / "requirements.txt"
+        if requirements_path.is_file():
+            full_cmd = f"{prefix}pip install -r requirements.txt" if prefix else "pip install -r requirements.txt"
+            if full_cmd not in seen_commands:
+                seen_commands.add(full_cmd)
+                commands.append(full_cmd)
+
+        # Try package.json scripts
+        package_json = scan_dir / "package.json"
+        if package_json.is_file():
+            try:
+                import json
+
+                data = json.loads(package_json.read_text(encoding="utf-8"))
+                scripts = data.get("scripts", {})
+                if isinstance(scripts, dict):
+                    for key in ("dev", "build", "test", "lint", "start", "format", "typecheck"):
+                        if key in scripts:
+                            full_cmd = f"{prefix}npm run {key}" if prefix else f"npm run {key}"
+                            if full_cmd not in seen_commands:
+                                seen_commands.add(full_cmd)
+                                commands.append(full_cmd)
+            except (OSError, json.JSONDecodeError):
+                pass
+
+        # Try Makefile targets
+        makefile_path = scan_dir / "Makefile"
+        if makefile_path.is_file():
+            try:
+                content = makefile_path.read_text(encoding="utf-8")
+                import re
+
+                targets = re.findall(r"^([a-zA-Z_][a-zA-Z0-9_-]*):", content, re.MULTILINE)
+                useful_targets = [
+                    t
+                    for t in targets
+                    if t
+                    in (
+                        "build",
+                        "test",
+                        "lint",
+                        "format",
+                        "install",
+                        "dev",
+                        "run",
+                        "clean",
+                        "check",
+                        "deploy",
+                        "start",
+                    )
+                ]
+                for t in useful_targets:
+                    full_cmd = f"{prefix}make {t}" if prefix else f"make {t}"
+                    if full_cmd not in seen_commands:
+                        seen_commands.add(full_cmd)
+                        commands.append(full_cmd)
+            except OSError:
+                pass
 
     return commands
 
@@ -635,6 +725,7 @@ def _extract_build_commands(
 def _extract_pyproject_commands(content: str, root_path: Path) -> list[str]:
     """Extract build commands from pyproject.toml.
 
+    Uses tomllib for reliable parsing, with regex fallback.
     Looks for [project.scripts], tool.ruff, tool.pytest, tool.mypy sections
     to infer real commands.
 
@@ -645,11 +736,34 @@ def _extract_pyproject_commands(content: str, root_path: Path) -> list[str]:
     Returns:
         List of command strings.
     """
-    import re
-
     commands: list[str] = []
 
-    # Check for [project.scripts] — CLI entry points
+    # Try tomllib first
+    try:
+        import tomllib
+
+        data = tomllib.loads(content)
+        scripts = data.get("project", {}).get("scripts", {})
+        if scripts:
+            cmd_name = next(iter(scripts))
+            commands.append(f"pip install -e '.[dev]'  # provides '{cmd_name}' command")
+
+        tool = data.get("tool", {})
+        if "pytest" in tool or "pytest" in str(data.get("project", {}).get("dependencies", [])):
+            commands.append("pytest")
+        if "ruff" in tool:
+            commands.append("ruff check .")
+            commands.append("ruff format .")
+        if "mypy" in tool:
+            commands.append("mypy src/")
+
+        return commands
+    except Exception:
+        pass
+
+    # Regex fallback
+    import re
+
     script_match = re.search(
         r"^\[project\.scripts\]\s*\n((?:[^\[].+\n)*)",
         content,
@@ -662,9 +776,8 @@ def _extract_pyproject_commands(content: str, root_path: Path) -> list[str]:
                 cmd_name = line.split("=")[0].strip().strip('"')
                 if cmd_name:
                     commands.append(f"pip install -e '.[dev]'  # provides '{cmd_name}' command")
-                    break  # Only need one install hint
+                    break
 
-    # Detect available tools from config sections
     if "[tool.pytest" in content or "pytest" in content.lower():
         commands.append("pytest")
     if "[tool.ruff" in content:
