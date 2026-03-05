@@ -2,13 +2,13 @@
 
 ## Current Phase: Phase 8 — Hardening (IN PROGRESS)
 ## Last Updated: 2026-03-05
-## Session: 10 (Phase 8 — Planning & Breakdown)
+## Session: 12 (Phase 8D — Generator Enrichment)
 
 ---
 
 ## Start Here in Next Session
 
-**Phase 8 is broken into 5 sub-phases.** Start with Phase 8A (decisions command).
+**Phase 8 is broken into 6 sub-phases.** Next up: Phase 8E (Real-World Testing & Bug Fixes).
 
 ---
 
@@ -59,7 +59,57 @@ each independently shippable with its own tests.
 
 ---
 
-### Phase 8D — Real-World Testing & Bug Fixes
+### Phase 8D — Generator Enrichment (Richer Output)
+**Scope:** Transform generators from basic outlines into deeply descriptive project context.
+**Agent Flow:** Planner → Architect → Developer → Tester
+**Rationale:** The generated files currently show a skeleton (name, file count, dep table). AI tools need *understanding* — what the project does, how components relate, what each file is for, what commands to actually run.
+
+#### P0 — Critical (must have)
+
+| # | Task | Status |
+|---|---|---|
+| 1 | **Project description extraction** — parse README.md first paragraph, `description` from pyproject.toml / package.json, entry-point docstring. Add `description` field to `ProjectModel`. Surface in all generators as the project summary instead of the current bare skeleton. | ✅ done |
+| 2 | **Rich module details** — surface module `purpose`, list key files with their `purpose` and `exports` (already in FileInfo from AST analyzer but never rendered). Show top 5-10 files per module with what they do, not just a file count. | ✅ done |
+| 3 | **Scanner: extract project description** — update `engine.py` to read README.md first paragraph + pyproject.toml `description` + package.json `description` during scan. Store in ProjectModel. | ✅ done |
+
+#### P1 — High Priority
+
+| # | Task | Status |
+|---|---|---|
+| 4 | **Real build/test/lint commands** — read `[project.scripts]` from pyproject.toml, `scripts` from package.json, detect Makefile targets. Replace hardcoded generic commands with actual project commands. | ✅ done |
+| 5 | **API surface rendering** — render `APIEndpoint` data in generators (currently collected but never shown). Show method, path, handler, auth status. Critical for web apps. | ✅ done |
+| 6 | **Dependency categorization** — distinguish runtime vs dev vs optional deps. Group by purpose where possible. Already parsed separately in dependency_parser but flattened in output. | ✅ done |
+
+#### P2 — Medium Priority
+
+| # | Task | Status |
+|---|---|---|
+| 7 | **File-level intelligence** — add a "Key Files" section to generators showing the most important files with their purpose, exports, and imports. Use AST data already collected. | ✅ done |
+| 8 | **Convention examples from actual code** — instead of just "naming: snake_case", show examples like "Functions: `scan_project()`, `detect_languages()`. Classes: `ProjectModel`, `ScannerError`." Pull from AST exports. | ✅ done |
+| 9 | **Git insights** — surface hotspots (most-changed files), recent activity, contributors per module from git_analyzer data. Add "Recent Activity" or "Hot Files" section. | ✅ done |
+
+#### P3 — Nice to Have
+
+| # | Task | Status |
+|---|---|---|
+| 10 | **Component relationship diagram** — text-based diagram showing inter-module dependencies (which modules import from which). Derive from FileInfo imports. | ✅ done |
+| 11 | **Environment / runtime requirements** — surface Python version, Node version, required env vars, database requirements from config files. | ✅ done |
+| 12 | **Testing / security / tech debt sections** — render `testing`, `security`, `tech_debt` fields from ProjectModel (already collected, never shown). | ✅ done |
+
+#### Tests & Docs
+
+| # | Task | Status |
+|---|---|---|
+| 13 | Update generator tests to verify new sections appear in output | ✅ done |
+| 14 | Update docs/progress.md | ✅ done |
+
+**Dependencies:** Phases 8A–8C (COMPLETE)
+**Effort:** Large — touches scanner, model, and all 6 generators
+**Impact:** This is the single highest-impact improvement. The generated files go from "basic outline" to "genuine project understanding" that AI tools can actually use.
+
+---
+
+### Phase 8E — Real-World Testing & Bug Fixes
 **Scope:** Test on 5-10 diverse open-source repos, fix bugs found.
 **Agent Flow:** Tester → Developer → Code Reviewer
 
@@ -75,12 +125,12 @@ each independently shippable with its own tests.
 | 8 | Create `tests/fixtures/` sample repos for regression testing | not started |
 | 9 | Update docs/progress.md | not started |
 
-**Dependencies:** Phases 8A–8C (COMPLETE)
+**Dependencies:** Phase 8D (enriched output makes testing more meaningful)
 **Effort:** Large — unpredictable, depends on bugs found
 
 ---
 
-### Phase 8E — Release Preparation & PyPI Publish
+### Phase 8F — Release Preparation & PyPI Publish
 **Scope:** Final polish, version bump, tag release, publish to PyPI.
 **Agent Flow:** Code Reviewer → Security Reviewer → Doc Writer → Developer
 
@@ -95,7 +145,7 @@ each independently shippable with its own tests.
 | 7 | Verify `pip install codebase-md` works from PyPI | not started |
 | 8 | Update docs/progress.md — COMPLETE | not started |
 
-**Dependencies:** Phase 8D (must be stable first)
+**Dependencies:** Phase 8E (must be stable first)
 **Effort:** Medium — review-heavy, mostly non-code work
 
 ---
@@ -280,7 +330,7 @@ each independently shippable with its own tests.
 - No real-world testing beyond codebase-md itself
 - PyPI publish deferred until tool is battle-tested on diverse projects
 
-All checks pass (ruff, mypy, pytest — 44 source files, 200 tests).
+All checks pass (ruff, mypy, pytest — 44 source files, 243 tests).
 
 ## Session Log
 
@@ -450,3 +500,18 @@ All checks pass (ruff, mypy, pytest — 44 source files, 200 tests).
 - **No CLI stubs remaining** — all commands are live: scan, init, generate, deps, context, hooks, decisions, diff, watch
 - **Next**: Phase 8D (real-world testing on diverse repos)
 - **Phase 7 COMPLETE** — all deliverables shipped, PyPI deferred to Phase 8
+
+### Session 12 (2026-03-05)
+- **Orchestrator**: read progress.md, confirmed Phase 8D is next (Generator Enrichment — Richer Output)
+- **Planner**: designed 14-task plan across P0/P1/P2/P3 priorities — models, scanner, base generator, all 6 generators, tests
+- **Architect**: reviewed design — added GitInsights Pydantic model, dep_type field to DependencyInfo, description/build_commands/git_insights to ProjectModel; all with defaults for backward compatibility
+- **Developer**: model changes — GitInsights (frozen Pydantic model: total_commits, contributors, hotspots, recent_files, branch), ProjectModel gains description/build_commands/git_insights fields, DependencyInfo gains dep_type field
+- **Developer**: scanner/engine.py — added _extract_project_description() (README.md first paragraph → pyproject.toml → package.json), _extract_build_commands() (pyproject.toml scripts/pytest/ruff/mypy, package.json scripts, Makefile targets), _build_git_insights() (GitInfo → GitInsights conversion)
+- **Developer**: scanner/dependency_parser.py — _parse_package_json sets dep_type (runtime/dev/peer), _parse_pyproject_toml sets dep_type (runtime/optional)
+- **Developer**: generators/base.py — massively enriched: _format_project_summary uses real description, _format_modules_section shows key files with purpose/exports, _format_dependencies_section groups by type, _format_conventions_section shows real code examples. Added 8 new methods: _format_api_surface_section, _format_key_files_section, _format_git_insights_section, _format_module_relationships_section, _format_testing_section, _format_security_section, _format_tech_debt_section, _format_build_commands_section
+- **Developer**: updated all 6 generators (claude_md, agents_md, codex_md, cursorrules, windsurf, generic_md) to include new sections: API surface, git insights, testing, security, tech debt, key files, module relationships. Build/run sections now use real build_commands when available.
+- **Tester**: added 43 new tests across 10 test classes in test_generators.py — TestProjectDescription (8), TestRichModuleDetails (3), TestRealBuildCommands (4), TestAPISurfaceRendering (4), TestDependencyCategorization (3), TestConventionExamples (3), TestGitInsights (4), TestModuleRelationships (2), TestTestingSecurityTechDebt (4), TestGitInsightsModel (2), TestScannerDescriptionExtraction (5)
+- **Tester**: ruff check ✅, mypy ✅, pytest ✅ — 243 tests pass in 1.80s (200 original + 43 new)
+- **Doc-writer**: updated docs/progress.md with Phase 8D completion
+- **Phase 8D COMPLETE** — generators transformed from skeleton outlines to deeply descriptive project context
+- **Next**: Phase 8E (Real-World Testing & Bug Fixes)

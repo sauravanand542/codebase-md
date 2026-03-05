@@ -35,6 +35,31 @@ class ScanMetadata(BaseModel):
     )
 
 
+class GitInsights(BaseModel):
+    """Git history insights for the project.
+
+    Stores hotspot files (most frequently changed), recent activity,
+    contributors, and total commit count for generator rendering.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    total_commits: int = Field(default=0, description="Total number of commits")
+    contributors: list[str] = Field(
+        default_factory=list,
+        description="All contributor names",
+    )
+    hotspots: list[str] = Field(
+        default_factory=list,
+        description="Most frequently changed files (top N by commit count)",
+    )
+    recent_files: list[str] = Field(
+        default_factory=list,
+        description="Recently modified files (last 30 days)",
+    )
+    branch: str = Field(default="", description="Current branch name")
+
+
 class ProjectModel(BaseModel):
     """Root data model representing a fully scanned project.
 
@@ -47,10 +72,18 @@ class ProjectModel(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     name: str = Field(description="Project name")
+    description: str = Field(
+        default="",
+        description="Project description extracted from README, pyproject.toml, or package.json",
+    )
     root_path: str = Field(description="Absolute path to the project root directory")
     languages: list[str] = Field(
         default_factory=list,
         description="Programming languages detected in the project",
+    )
+    build_commands: list[str] = Field(
+        default_factory=list,
+        description="Actual build/test/lint commands extracted from project config",
     )
     architecture: ArchitectureInfo = Field(
         default_factory=ArchitectureInfo,
@@ -87,6 +120,10 @@ class ProjectModel(BaseModel):
     api_surface: list[APIEndpoint] = Field(
         default_factory=list,
         description="Detected API endpoints",
+    )
+    git_insights: GitInsights = Field(
+        default_factory=GitInsights,
+        description="Git history insights (hotspots, contributors, recent activity)",
     )
     metadata: ScanMetadata | None = Field(
         default=None,

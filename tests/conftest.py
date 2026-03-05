@@ -12,7 +12,7 @@ from codebase_md.model.convention import ConventionSet, ImportStyle, NamingConve
 from codebase_md.model.decision import DecisionRecord
 from codebase_md.model.dependency import DependencyHealth, DependencyInfo
 from codebase_md.model.module import APIEndpoint, FileInfo, ModuleInfo
-from codebase_md.model.project import ProjectModel, ScanMetadata
+from codebase_md.model.project import GitInsights, ProjectModel, ScanMetadata
 
 
 @pytest.fixture
@@ -87,8 +87,10 @@ def sample_project_model(
     """A fully populated ProjectModel for testing."""
     return ProjectModel(
         name="test-project",
+        description="A CLI tool for scanning codebases and generating AI context files.",
         root_path="/tmp/test-project",
         languages=["python"],
+        build_commands=["pytest", "ruff check .", "mypy src/"],
         architecture=ArchitectureInfo(
             architecture_type=ArchitectureType.CLI_TOOL,
             entry_points=["src/app.py"],
@@ -120,6 +122,13 @@ def sample_project_model(
                 auth_required=False,
             ),
         ],
+        git_insights=GitInsights(
+            total_commits=150,
+            contributors=["Alice", "Bob"],
+            hotspots=["src/app.py", "src/cli.py"],
+            recent_files=["src/app.py"],
+            branch="main",
+        ),
         metadata=sample_scan_metadata,
     )
 
@@ -130,30 +139,28 @@ def sample_python_project(tmp_path: Path) -> Path:
     # pyproject.toml
     (tmp_path / "pyproject.toml").write_text(
         '[project]\nname = "test-proj"\nversion = "0.1.0"\n\n'
-        'dependencies = [\n'
+        "dependencies = [\n"
         '    "typer>=0.9.0",\n'
         '    "rich>=13.0.0",\n'
-        ']\n'
+        "]\n"
     )
     # Source files
     src = tmp_path / "src" / "myapp"
     src.mkdir(parents=True)
     (src / "__init__.py").write_text('"""My app."""\n__version__ = "0.1.0"\n')
     (src / "cli.py").write_text(
-        'from __future__ import annotations\n\n'
-        'import typer\n\n'
-        'app = typer.Typer()\n\n\n'
-        '@app.command()\n'
-        'def main() -> None:\n'
+        "from __future__ import annotations\n\n"
+        "import typer\n\n"
+        "app = typer.Typer()\n\n\n"
+        "@app.command()\n"
+        "def main() -> None:\n"
         '    """Entry point."""\n'
         '    print("hello")\n'
     )
     # Test file
     tests = tmp_path / "tests"
     tests.mkdir()
-    (tests / "test_cli.py").write_text(
-        'def test_placeholder() -> None:\n    assert True\n'
-    )
+    (tests / "test_cli.py").write_text("def test_placeholder() -> None:\n    assert True\n")
     # Git init for git_analyzer
     git_dir = tmp_path / ".git"
     git_dir.mkdir()

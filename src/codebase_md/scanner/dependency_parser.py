@@ -93,6 +93,11 @@ def _parse_package_json(path: Path) -> list[DependencyInfo]:
 
     deps: list[DependencyInfo] = []
 
+    _section_dep_type = {
+        "dependencies": "runtime",
+        "devDependencies": "dev",
+        "peerDependencies": "peer",
+    }
     for section in ("dependencies", "devDependencies", "peerDependencies"):
         section_deps = data.get(section, {})
         if not isinstance(section_deps, dict):
@@ -104,6 +109,7 @@ def _parse_package_json(path: Path) -> list[DependencyInfo]:
                     name=name,
                     version=version_str,
                     ecosystem="npm",
+                    dep_type=_section_dep_type[section],
                 )
             )
 
@@ -223,11 +229,13 @@ def _parse_pyproject_toml(path: Path) -> list[DependencyInfo]:
             if match:
                 name = match.group(1)
                 version = match.group(2) or "*"
+                dtype = "optional" if in_optional_deps else "runtime"
                 deps.append(
                     DependencyInfo(
                         name=name,
                         version=version.strip(),
                         ecosystem="pypi",
+                        dep_type=dtype,
                     )
                 )
 

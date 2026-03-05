@@ -59,8 +59,18 @@ class CursorRulesGenerator(BaseGenerator):
         if model.modules:
             sections.append(self._build_file_patterns(model))
 
+        # API Surface
+        api = self._format_api_surface_section(model)
+        if api:
+            sections.append(api)
+
         # Technology Stack
         sections.append(self._build_tech_stack(model))
+
+        # Testing
+        testing = self._format_testing_section(model)
+        if testing:
+            sections.append(testing)
 
         return "\n".join(sections)
 

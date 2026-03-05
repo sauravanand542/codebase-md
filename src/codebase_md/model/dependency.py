@@ -54,3 +54,7 @@ class DependencyInfo(BaseModel):
         default="unknown",
         description="Package ecosystem, e.g. 'npm', 'pypi', 'cargo'",
     )
+    dep_type: str = Field(
+        default="runtime",
+        description="Dependency type: 'runtime', 'dev', 'optional', or 'peer'",
+    )

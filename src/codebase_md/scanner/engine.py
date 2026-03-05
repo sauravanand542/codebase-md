@@ -17,7 +17,7 @@ from codebase_md.model.architecture import ArchitectureInfo
 from codebase_md.model.convention import ConventionSet
 from codebase_md.model.dependency import DependencyInfo
 from codebase_md.model.module import FileInfo, ModuleInfo
-from codebase_md.model.project import ProjectModel, ScanMetadata
+from codebase_md.model.project import GitInsights, ProjectModel, ScanMetadata
 from codebase_md.persistence.store import Store
 from codebase_md.scanner.ast_analyzer import ASTAnalysisError, analyze_files
 from codebase_md.scanner.convention_inferrer import ConventionInferenceError, infer_conventions
@@ -123,6 +123,15 @@ def scan_project(
     # Use actual git SHA, not branch name
     git_sha = _get_git_sha(root_path)
 
+    # Step 8: Extract project description
+    description = _extract_project_description(root_path, warnings)
+
+    # Step 9: Extract real build/test/lint commands
+    build_commands = _extract_build_commands(root_path, languages, warnings)
+
+    # Step 10: Build git insights
+    git_insights = _build_git_insights(git_info)
+
     # Assemble the ProjectModel
     duration = time.monotonic() - start_time
     metadata = ScanMetadata(
@@ -135,12 +144,15 @@ def scan_project(
     project_name = root_path.name
     model = ProjectModel(
         name=project_name,
+        description=description,
         root_path=str(root_path),
         languages=languages,
+        build_commands=build_commands,
         architecture=architecture,
         modules=modules,
         dependencies=dependencies,
         conventions=conventions,
+        git_insights=git_insights,
         metadata=metadata,
     )
 
@@ -405,3 +417,281 @@ def _persist_result(
         store.write_project(model)
     except Exception as e:
         warnings.append(f"Failed to persist scan results: {e}")
+
+
+def _extract_project_description(
+    root_path: Path,
+    warnings: list[str],
+) -> str:
+    """Extract a project description from README, pyproject.toml, or package.json.
+
+    Tries sources in priority order:
+    1. README.md — first non-empty, non-heading paragraph
+    2. pyproject.toml — [project].description
+    3. package.json — "description" field
+
+    Args:
+        root_path: Project root.
+        warnings: List to append warnings to.
+
+    Returns:
+        Project description string, or "" if not found.
+    """
+    # Try README.md first
+    for readme_name in ("README.md", "readme.md", "README.rst", "README"):
+        readme_path = root_path / readme_name
+        if readme_path.is_file():
+            try:
+                content = readme_path.read_text(encoding="utf-8", errors="replace")
+                desc = _extract_readme_description(content)
+                if desc:
+                    return desc
+            except OSError:
+                pass
+
+    # Try pyproject.toml
+    pyproject_path = root_path / "pyproject.toml"
+    if pyproject_path.is_file():
+        try:
+            content = pyproject_path.read_text(encoding="utf-8")
+            desc = _extract_pyproject_description(content)
+            if desc:
+                return desc
+        except OSError:
+            pass
+
+    # Try package.json
+    package_json = root_path / "package.json"
+    if package_json.is_file():
+        try:
+            import json
+
+            data = json.loads(package_json.read_text(encoding="utf-8"))
+            desc = data.get("description", "")
+            if desc and isinstance(desc, str):
+                return str(desc.strip())
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    return ""
+
+
+def _extract_readme_description(content: str) -> str:
+    """Extract the first meaningful paragraph from README content.
+
+    Skips headings, badges, blank lines. Returns the first paragraph
+    that looks like prose (not a code block or image).
+
+    Args:
+        content: README file content.
+
+    Returns:
+        First paragraph text, or "".
+    """
+    lines = content.splitlines()
+    paragraph_lines: list[str] = []
+    found_heading = False
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Skip blank lines before content
+        if not stripped:
+            if paragraph_lines:
+                break  # End of first paragraph
+            continue
+
+        # Skip headings
+        if stripped.startswith("#"):
+            if found_heading and paragraph_lines:
+                break  # Second heading → done
+            found_heading = True
+            continue
+
+        # Skip badges (markdown images/links starting lines)
+        if stripped.startswith("[![") or stripped.startswith("!["):
+            continue
+
+        # Skip code blocks
+        if stripped.startswith("```"):
+            if paragraph_lines:
+                break
+            continue
+
+        # Skip HTML tags
+        if stripped.startswith("<"):
+            continue
+
+        # This is content
+        paragraph_lines.append(stripped)
+
+    if not paragraph_lines:
+        return ""
+
+    result = " ".join(paragraph_lines)
+    # Truncate if very long
+    if len(result) > 500:
+        result = result[:497] + "..."
+    return result
+
+
+def _extract_pyproject_description(content: str) -> str:
+    """Extract description from pyproject.toml content.
+
+    Looks for description = "..." in [project] section.
+
+    Args:
+        content: pyproject.toml file content.
+
+    Returns:
+        Description string, or "".
+    """
+    import re
+
+    match = re.search(r'^description\s*=\s*"([^"]*)"', content, re.MULTILINE)
+    if match:
+        return match.group(1).strip()
+    return ""
+
+
+def _extract_build_commands(
+    root_path: Path,
+    languages: list[str],
+    warnings: list[str],
+) -> list[str]:
+    """Extract actual build/test/lint commands from project configuration.
+
+    Reads scripts from pyproject.toml, package.json, and Makefile to find
+    real commands rather than guessing from language.
+
+    Args:
+        root_path: Project root.
+        languages: Detected languages.
+        warnings: List to append warnings to.
+
+    Returns:
+        List of command strings (e.g. "pytest", "npm test").
+    """
+    commands: list[str] = []
+
+    # Try pyproject.toml [project.scripts]
+    pyproject_path = root_path / "pyproject.toml"
+    if pyproject_path.is_file():
+        try:
+            content = pyproject_path.read_text(encoding="utf-8")
+            commands.extend(_extract_pyproject_commands(content, root_path))
+        except OSError:
+            pass
+
+    # Try package.json scripts
+    package_json = root_path / "package.json"
+    if package_json.is_file():
+        try:
+            import json
+
+            data = json.loads(package_json.read_text(encoding="utf-8"))
+            scripts = data.get("scripts", {})
+            if isinstance(scripts, dict):
+                for key in ("dev", "build", "test", "lint", "start", "format", "typecheck"):
+                    if key in scripts:
+                        commands.append(f"npm run {key}")
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    # Try Makefile targets
+    makefile_path = root_path / "Makefile"
+    if makefile_path.is_file():
+        try:
+            content = makefile_path.read_text(encoding="utf-8")
+            import re
+
+            targets = re.findall(r"^([a-zA-Z_][a-zA-Z0-9_-]*):", content, re.MULTILINE)
+            useful_targets = [
+                t
+                for t in targets
+                if t
+                in (
+                    "build",
+                    "test",
+                    "lint",
+                    "format",
+                    "install",
+                    "dev",
+                    "run",
+                    "clean",
+                    "check",
+                    "deploy",
+                    "start",
+                )
+            ]
+            for t in useful_targets:
+                commands.append(f"make {t}")
+        except OSError:
+            pass
+
+    return commands
+
+
+def _extract_pyproject_commands(content: str, root_path: Path) -> list[str]:
+    """Extract build commands from pyproject.toml.
+
+    Looks for [project.scripts], tool.ruff, tool.pytest, tool.mypy sections
+    to infer real commands.
+
+    Args:
+        content: pyproject.toml file content.
+        root_path: Project root for checking tool availability.
+
+    Returns:
+        List of command strings.
+    """
+    import re
+
+    commands: list[str] = []
+
+    # Check for [project.scripts] — CLI entry points
+    script_match = re.search(
+        r"^\[project\.scripts\]\s*\n((?:[^\[].+\n)*)",
+        content,
+        re.MULTILINE,
+    )
+    if script_match:
+        for line in script_match.group(1).splitlines():
+            line = line.strip()
+            if "=" in line:
+                cmd_name = line.split("=")[0].strip().strip('"')
+                if cmd_name:
+                    commands.append(f"pip install -e '.[dev]'  # provides '{cmd_name}' command")
+                    break  # Only need one install hint
+
+    # Detect available tools from config sections
+    if "[tool.pytest" in content or "pytest" in content.lower():
+        commands.append("pytest")
+    if "[tool.ruff" in content:
+        commands.append("ruff check .")
+        commands.append("ruff format .")
+    if "[tool.mypy" in content:
+        commands.append("mypy src/")
+
+    return commands
+
+
+def _build_git_insights(git_info: GitInfo | None) -> GitInsights:
+    """Build GitInsights model from raw git analysis data.
+
+    Args:
+        git_info: Raw git analysis results, or None.
+
+    Returns:
+        Populated GitInsights model.
+    """
+    if not git_info:
+        return GitInsights()
+
+    return GitInsights(
+        total_commits=git_info.total_commits,
+        contributors=git_info.contributors,
+        hotspots=git_info.hotspots[:10],
+        recent_files=git_info.recent_files[:10],
+        branch=git_info.branch,
+    )

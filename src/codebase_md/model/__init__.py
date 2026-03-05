@@ -11,7 +11,7 @@ from codebase_md.model.convention import (
 from codebase_md.model.decision import DecisionRecord
 from codebase_md.model.dependency import DependencyHealth, DependencyInfo
 from codebase_md.model.module import APIEndpoint, FileInfo, ModuleInfo
-from codebase_md.model.project import ProjectModel, ScanMetadata
+from codebase_md.model.project import GitInsights, ProjectModel, ScanMetadata
 
 __all__ = [
     "APIEndpoint",
@@ -22,6 +22,7 @@ __all__ = [
     "DependencyHealth",
     "DependencyInfo",
     "FileInfo",
+    "GitInsights",
     "ImportStyle",
     "ModuleInfo",
     "NamingConvention",

@@ -59,8 +59,23 @@ class WindsurfGenerator(BaseGenerator):
         if model.modules:
             sections.append(self._build_file_map(model))
 
+        # API Surface
+        api = self._format_api_surface_section(model)
+        if api:
+            sections.append(api)
+
         # Tech Stack
         sections.append(self._build_stack_section(model))
+
+        # Testing
+        testing = self._format_testing_section(model)
+        if testing:
+            sections.append(testing)
+
+        # Security
+        security = self._format_security_section(model)
+        if security:
+            sections.append(security)
 
         return "\n".join(sections)
 

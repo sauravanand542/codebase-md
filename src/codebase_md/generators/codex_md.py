@@ -58,14 +58,26 @@ class CodexMdGenerator(BaseGenerator):
         # Conventions
         sections.append(self._format_conventions_section(model))
 
+        # API Surface
+        api = self._format_api_surface_section(model)
+        if api:
+            sections.append(api)
+
         # Dependencies (compact)
         if model.dependencies:
             sections.append(self._build_compact_deps(model))
+
+        # Testing
+        testing = self._format_testing_section(model)
+        if testing:
+            sections.append(testing)
 
         return "\n".join(sections)
 
     def _build_setup_section(self, model: ProjectModel) -> str:
         """Build setup instructions section.
+
+        Uses extracted build commands when available.
 
         Args:
             model: The project model.
@@ -73,7 +85,16 @@ class CodexMdGenerator(BaseGenerator):
         Returns:
             Markdown-formatted setup section.
         """
-        lines = ["## Setup", "", "```bash"]
+        lines = ["## Setup", ""]
+
+        # Use real commands if available
+        if model.build_commands:
+            real_cmds = self._format_build_commands_section(model)
+            if real_cmds:
+                lines.append(real_cmds)
+                return "\n".join(lines)
+
+        lines.append("```bash")
         langs_lower = [lang.lower() for lang in model.languages]
 
         if "python" in langs_lower:
@@ -113,7 +134,7 @@ class CodexMdGenerator(BaseGenerator):
         return "\n".join(lines)
 
     def _build_project_structure(self, model: ProjectModel) -> str:
-        """Build project structure section.
+        """Build project structure section with module detail.
 
         Args:
             model: The project model.
@@ -133,7 +154,8 @@ class CodexMdGenerator(BaseGenerator):
             lines.append("**Modules:**")
             for mod in model.modules:
                 purpose = f" — {mod.purpose}" if mod.purpose else ""
-                lines.append(f"- `{mod.path}`{purpose}")
+                file_count = f" ({len(mod.files)} files)" if mod.files else ""
+                lines.append(f"- `{mod.path}`{purpose}{file_count}")
 
         lines.append("")
         return "\n".join(lines)

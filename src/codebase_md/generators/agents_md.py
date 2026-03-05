@@ -67,6 +67,26 @@ class AgentsMdGenerator(BaseGenerator):
         if model.modules:
             sections.append(self._build_compact_modules(model))
 
+        # API Surface
+        api = self._format_api_surface_section(model)
+        if api:
+            sections.append(api)
+
+        # Key Files
+        key_files = self._format_key_files_section(model)
+        if key_files:
+            sections.append(key_files)
+
+        # Git Insights
+        git = self._format_git_insights_section(model)
+        if git:
+            sections.append(git)
+
+        # Testing
+        testing = self._format_testing_section(model)
+        if testing:
+            sections.append(testing)
+
         # Build Status
         sections.append("## Build Status\n")
         sections.append("See `docs/progress.md` for current implementation state.")
@@ -93,7 +113,9 @@ class AgentsMdGenerator(BaseGenerator):
         return "\n".join(lines)
 
     def _build_key_commands(self, model: ProjectModel) -> str:
-        """Build key commands section with language-specific defaults.
+        """Build key commands section with real or language-specific defaults.
+
+        Uses extracted build commands when available.
 
         Args:
             model: The project model.
@@ -102,6 +124,15 @@ class AgentsMdGenerator(BaseGenerator):
             Markdown-formatted key commands section.
         """
         lines = ["## Key Commands", "", "```bash"]
+
+        # Use real commands if available
+        if model.build_commands:
+            for cmd in model.build_commands:
+                lines.append(cmd)
+            lines.extend(["```", ""])
+            return "\n".join(lines)
+
+        # Fallback to language-specific defaults
         langs_lower = [lang.lower() for lang in model.languages]
 
         if "python" in langs_lower:

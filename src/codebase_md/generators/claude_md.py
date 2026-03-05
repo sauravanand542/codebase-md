@@ -68,9 +68,44 @@ class ClaudeMdGenerator(BaseGenerator):
         if model.modules:
             sections.append(self._format_modules_section(model))
 
+        # Key Files
+        key_files = self._format_key_files_section(model)
+        if key_files:
+            sections.append(key_files)
+
         # Dependencies
         if model.dependencies:
             sections.append(self._format_dependencies_section(model))
+
+        # API Surface
+        api = self._format_api_surface_section(model)
+        if api:
+            sections.append(api)
+
+        # Git Insights
+        git = self._format_git_insights_section(model)
+        if git:
+            sections.append(git)
+
+        # Module Relationships
+        rels = self._format_module_relationships_section(model)
+        if rels:
+            sections.append(rels)
+
+        # Testing
+        testing = self._format_testing_section(model)
+        if testing:
+            sections.append(testing)
+
+        # Security
+        security = self._format_security_section(model)
+        if security:
+            sections.append(security)
+
+        # Tech Debt
+        tech_debt = self._format_tech_debt_section(model)
+        if tech_debt:
+            sections.append(tech_debt)
 
         # Decisions
         if model.decisions:
@@ -113,7 +148,10 @@ class ClaudeMdGenerator(BaseGenerator):
         return "\n".join(lines)
 
     def _build_build_run_section(self, model: ProjectModel) -> str:
-        """Build the Build & Run section with language-specific hints.
+        """Build the Build & Run section with real or language-specific commands.
+
+        Uses extracted build commands when available, falls back to
+        language-specific defaults.
 
         Args:
             model: The project model.
@@ -123,6 +161,14 @@ class ClaudeMdGenerator(BaseGenerator):
         """
         lines = ["## Build & Run", ""]
 
+        # Use real commands if available
+        if model.build_commands:
+            real_cmds = self._format_build_commands_section(model)
+            if real_cmds:
+                lines.append(real_cmds)
+                return "\n".join(lines)
+
+        # Fallback to language-specific defaults
         langs_lower = [lang.lower() for lang in model.languages]
 
         if "python" in langs_lower:
