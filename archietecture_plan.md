@@ -370,12 +370,27 @@ depshift:
 17. `depshift/registries/` — npm + pypi clients
 18. `depshift/version_differ.py` — breaking change detection
 
-### Phase 6 — Polish & Ship (Week 6)
+### Phase 6 — Context Routing (Week 6)
 
-19. `integrations/git_hooks.py` — auto-regeneration hooks
-20. `integrations/github_action.py` — generate GH Action config
-21. README, docs, CONTRIBUTING guidelines
-22. Publish to PyPI
+19. `context/chunker.py` — split knowledge into topic chunks
+20. `context/ranker.py` — relevance scoring with TF-IDF
+21. `context/router.py` — route relevant context to queries
+
+### Phase 7 — Integrations & Polish (Week 7)
+
+22. `integrations/git_hooks.py` — auto-regeneration hooks
+23. `integrations/github_action.py` — generate GH Action config
+24. tests/ — comprehensive test suite
+25. README, docs, CONTRIBUTING guidelines
+26. `.github/workflows/publish.yml` — PyPI trusted publisher (ready, not triggered)
+
+### Phase 8 — Hardening & PyPI (Broken into Sub-Phases)
+
+**8A — `decisions` CLI** — Wire decisions add/list/remove with DecisionLog + Rich
+**8B — `diff` CLI** — New `scanner/differ.py` + `DiffResult` model, compare current vs last scan
+**8C — `watch` CLI** — File watcher with `watchfiles`, debounced re-scan + regenerate
+**8D — Real-world testing** — Test on 5-10 diverse repos, fix bugs, create test fixtures
+**8E — Release & PyPI** — Security review, code review, version bump, CHANGELOG, tag + publish
 
 ---
 

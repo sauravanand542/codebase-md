@@ -63,9 +63,9 @@ ast = [
 codebase = "codebase_md.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/saurav/codebase-md"
-Repository = "https://github.com/saurav/codebase-md"
-Issues = "https://github.com/saurav/codebase-md/issues"
+Homepage = "https://github.com/sauravanand542/codebase-md"
+Repository = "https://github.com/sauravanand542/codebase-md"
+Issues = "https://github.com/sauravanand542/codebase-md/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/codebase_md"]

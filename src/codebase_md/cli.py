@@ -432,9 +432,49 @@ def decisions_add(
     ] = Path("."),
 ) -> None:
     """Interactively record a new architectural decision."""
-    console.print(f"[bold green]Adding decision[/bold green] for {path.resolve()}")
-    # TODO: Implement with persistence.decisions
-    console.print("[yellow]Not yet implemented.[/yellow]")
+    from datetime import UTC, datetime
+
+    from codebase_md.model.decision import DecisionRecord
+    from codebase_md.persistence.decisions import DecisionLog, DecisionLogError
+
+    resolved = path.resolve()
+    console.print("[bold green]Record a new architectural decision[/bold green]\n")
+
+    # Interactive prompts
+    title = typer.prompt("Decision title (e.g. 'Use PostgreSQL')")
+    context_text = typer.prompt("Context (why was a decision needed?)")
+    choice = typer.prompt("Choice (what was decided?)")
+
+    # Alternatives — comma-separated
+    alt_input = typer.prompt(
+        "Alternatives considered (comma-separated, or press Enter to skip)",
+        default="",
+    )
+    alternatives = [a.strip() for a in alt_input.split(",") if a.strip()] if alt_input else []
+
+    # Consequences — comma-separated
+    cons_input = typer.prompt(
+        "Consequences/trade-offs (comma-separated, or press Enter to skip)",
+        default="",
+    )
+    consequences = [c.strip() for c in cons_input.split(",") if c.strip()] if cons_input else []
+
+    decision = DecisionRecord(
+        date=datetime.now(tz=UTC),
+        title=title,
+        context=context_text,
+        choice=choice,
+        alternatives=alternatives,
+        consequences=consequences,
+    )
+
+    try:
+        log = DecisionLog(resolved)
+        log.add_decision(decision)
+        console.print(f"\n[bold green]Done![/bold green] Decision recorded: [bold]{title}[/bold]")
+    except DecisionLogError as e:
+        console.print(f"[bold red]Error:[/bold red] {e}")
+        raise typer.Exit(code=1) from e
 
 
 @decisions_app.command("list")
@@ -445,9 +485,94 @@ def decisions_list(
     ] = Path("."),
 ) -> None:
     """List all recorded architectural decisions."""
-    console.print(f"[bold green]Decisions[/bold green] for {path.resolve()}")
-    # TODO: Implement with persistence.decisions
-    console.print("[yellow]Not yet implemented.[/yellow]")
+    from rich.table import Table
+
+    from codebase_md.persistence.decisions import DecisionLog, DecisionLogError
+
+    resolved = path.resolve()
+
+    try:
+        log = DecisionLog(resolved)
+        records = log.list_decisions()
+    except DecisionLogError as e:
+        console.print(f"[bold red]Error:[/bold red] {e}")
+        raise typer.Exit(code=1) from e
+
+    if not records:
+        console.print("[yellow]No decisions recorded yet.[/yellow] Use [bold]codebase decisions add[/bold] to record one.")
+        return
+
+    table = Table(title=f"Architectural Decisions ({len(records)})", show_lines=True)
+    table.add_column("#", style="dim", width=4)
+    table.add_column("Date", style="cyan", width=12)
+    table.add_column("Title", style="bold")
+    table.add_column("Choice", style="green")
+    table.add_column("Alternatives", style="dim")
+
+    for i, record in enumerate(records, 1):
+        date_str = record.date.strftime("%Y-%m-%d")
+        alts = ", ".join(record.alternatives) if record.alternatives else "—"
+        table.add_row(str(i), date_str, record.title, record.choice, alts)
+
+    console.print()
+    console.print(table)
+
+
+@decisions_app.command("remove")
+def decisions_remove(
+    index: Annotated[
+        int,
+        typer.Argument(help="Decision number to remove (1-based, from 'decisions list')."),
+    ],
+    path: Annotated[
+        Path,
+        typer.Option("--path", "-p", help="Project root directory."),
+    ] = Path("."),
+    force: Annotated[
+        bool,
+        typer.Option("--force", "-f", help="Skip confirmation prompt."),
+    ] = False,
+) -> None:
+    """Remove an architectural decision by its index number."""
+    from codebase_md.persistence.decisions import DecisionLog, DecisionLogError
+
+    resolved = path.resolve()
+
+    try:
+        log = DecisionLog(resolved)
+        records = log.list_decisions()
+    except DecisionLogError as e:
+        console.print(f"[bold red]Error:[/bold red] {e}")
+        raise typer.Exit(code=1) from e
+
+    if not records:
+        console.print("[yellow]No decisions to remove.[/yellow]")
+        return
+
+    if index < 1 or index > len(records):
+        console.print(
+            f"[bold red]Error:[/bold red] Invalid index {index}. "
+            f"Valid range: 1-{len(records)}."
+        )
+        raise typer.Exit(code=1)
+
+    target = records[index - 1]
+    console.print(f"Decision #{index}: [bold]{target.title}[/bold] — {target.choice}")
+
+    if not force:
+        confirm = typer.confirm("Remove this decision?")
+        if not confirm:
+            console.print("[dim]Cancelled.[/dim]")
+            raise typer.Exit()
+
+    # Remove and write back
+    remaining = [r for i, r in enumerate(records) if i != index - 1]
+    try:
+        log._write_decisions(remaining)
+        console.print(f"[bold green]Removed[/bold green] decision #{index}: {target.title}")
+    except DecisionLogError as e:
+        console.print(f"[bold red]Error:[/bold red] {e}")
+        raise typer.Exit(code=1) from e
 
 
 @app.command()
@@ -456,15 +581,105 @@ def watch(
         Path,
         typer.Argument(help="Project root directory to watch."),
     ] = Path("."),
+    interval: Annotated[
+        int,
+        typer.Option("--interval", "-i", help="Poll interval in seconds."),
+    ] = 5,
 ) -> None:
     """Watch for file changes and regenerate context files.
 
-    Monitors the project for changes and automatically re-scans
-    and regenerates output files when source files are modified.
+    Monitors the project for changes by polling at the specified interval.
+    When source files are modified, automatically re-scans and regenerates
+    output files. Press Ctrl+C to stop.
     """
-    console.print(f"[bold yellow]Watching[/bold yellow] {path.resolve()} for changes...")
-    # TODO: Implement file watching
-    console.print("[yellow]Not yet implemented.[/yellow]")
+    import time
+
+    from codebase_md.persistence.store import Store, StoreError
+    from codebase_md.scanner.differ import compute_diff
+    from codebase_md.scanner.engine import ScannerError, scan_project
+
+    resolved = path.resolve()
+    console.print(
+        f"[bold yellow]Watching[/bold yellow] {resolved} "
+        f"[dim](interval: {interval}s, Ctrl+C to stop)[/dim]"
+    )
+
+    # Ensure we have an initial scan
+    try:
+        store = Store(resolved)
+        store.read_project()
+    except Exception:
+        console.print("[dim]No initial scan found — running first scan...[/dim]")
+        try:
+            scan_project(resolved, persist=True)
+            console.print("[green]Initial scan complete.[/green]")
+        except ScannerError as e:
+            console.print(f"[bold red]Error:[/bold red] {e}")
+            raise typer.Exit(code=1) from e
+
+    try:
+        while True:
+            time.sleep(interval)
+
+            # Run a fresh scan without persisting
+            try:
+                result = scan_project(resolved, persist=False)
+            except ScannerError:
+                continue
+
+            # Compare with stored model
+            try:
+                store = Store(resolved)
+                old_model = store.read_project()
+            except StoreError:
+                continue
+
+            diff_result = compute_diff(old_model, result.model)
+
+            if diff_result.has_changes:
+                console.print(
+                    f"\n[bold yellow]Changes detected:[/bold yellow] {diff_result.summary}"
+                )
+
+                # Re-scan and persist
+                try:
+                    scan_project(resolved, persist=True)
+                except ScannerError as e:
+                    console.print(f"[red]Re-scan failed:[/red] {e}")
+                    continue
+
+                # Regenerate all formats
+                from codebase_md.generators import AVAILABLE_FORMATS, get_generator
+                from codebase_md.generators.base import GeneratorError
+
+                try:
+                    model = store.read_project()
+                    config = store.read_config()
+                    formats = config.get("generators", AVAILABLE_FORMATS)
+                    if not isinstance(formats, list):
+                        formats = list(AVAILABLE_FORMATS)
+
+                    generated: list[str] = []
+                    for fmt in formats:
+                        try:
+                            gen_class = get_generator(fmt)
+                            generator = gen_class()
+                            content = generator.generate(model)
+                            output_path = resolved / generator.output_filename
+                            output_path.write_text(content, encoding="utf-8")
+                            generated.append(generator.output_filename)
+                        except (KeyError, GeneratorError, OSError):
+                            pass
+
+                    if generated:
+                        console.print(
+                            f"  [green]Regenerated:[/green] {', '.join(generated)}"
+                        )
+                except StoreError:
+                    console.print("  [red]Failed to regenerate.[/red]")
+
+    except KeyboardInterrupt:
+        console.print("\n[bold]Stopped watching.[/bold]")
 
 
 @app.command()
@@ -480,9 +695,47 @@ def diff(
     .codebase/project.json and highlights additions, removals,
     and modifications.
     """
-    console.print(f"[bold red]Diff[/bold red] since last scan for {path.resolve()}")
-    # TODO: Implement diff logic
-    console.print("[yellow]Not yet implemented.[/yellow]")
+    from codebase_md.persistence.store import ProjectNotFoundError, Store, StoreError
+    from codebase_md.scanner.differ import compute_diff, format_diff
+    from codebase_md.scanner.engine import ScannerError, scan_project
+
+    resolved = path.resolve()
+    console.print(f"[bold cyan]Diff[/bold cyan] since last scan for {resolved}")
+
+    # Load the previous scan
+    try:
+        store = Store(resolved)
+        old_model = store.read_project()
+    except ProjectNotFoundError as e:
+        console.print(
+            "[bold red]Error:[/bold red] No previous scan found. Run [bold]codebase scan[/bold] first."
+        )
+        raise typer.Exit(code=1) from e
+    except StoreError as e:
+        console.print(f"[bold red]Error:[/bold red] {e}")
+        raise typer.Exit(code=1) from e
+
+    # Run a fresh scan (without persisting — we just want to compare)
+    console.print("[dim]Running fresh scan...[/dim]")
+    try:
+        result = scan_project(resolved, persist=False)
+    except ScannerError as e:
+        console.print(f"[bold red]Error:[/bold red] {e}")
+        raise typer.Exit(code=1) from e
+
+    new_model = result.model
+
+    # Compute diff
+    diff_result = compute_diff(old_model, new_model)
+
+    # Display
+    console.print()
+    if not diff_result.has_changes:
+        console.print("[bold green]No changes[/bold green] since last scan.")
+    else:
+        output = format_diff(diff_result)
+        console.print(output)
+        console.print(f"\n[dim]Summary: {diff_result.summary}[/dim]")
 
 
 @app.command()

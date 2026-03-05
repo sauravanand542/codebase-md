@@ -1,23 +1,102 @@
 # codebase-md Build Progress
 
-## Current Phase: Phase 7 — Integrations & Polish (IN PROGRESS)
+## Current Phase: Phase 8 — Hardening (IN PROGRESS)
 ## Last Updated: 2026-03-05
-## Session: 8 (Phase 7 — Integrations & Polish: Git Hooks, GitHub Action, Test Suite)
+## Session: 10 (Phase 8 — Planning & Breakdown)
 
 ---
 
 ## Start Here in Next Session
 
-**Phase 7 is in progress.** Integrations package and full test suite are live:
-- `integrations/git_hooks.py` — HookType enum (post-commit, pre-push), install/remove/list hooks, backup & restore existing hooks, marker-based identification, config-driven hook selection
-- `integrations/github_action.py` — ActionConfig Pydantic model, generate_workflow() YAML builder, configurable triggers/branches/Python version/auto-commit
-- CLI `codebase hooks` is fully functional: `install`, `remove`, `status` actions
-- **173 tests** across 12 test files — all passing (ruff ✅, mypy ✅, pytest ✅)
+**Phase 8 is broken into 5 sub-phases.** Start with Phase 8A (decisions command).
 
-**Remaining Phase 7 items:**
-1. README.md — comprehensive usage examples, installation guide, feature showcase
-2. CONTRIBUTING.md — contributor guide
-3. Publish to PyPI
+---
+
+## Phase 8 — Hardening (Broken Into Sub-Phases)
+
+The original Phase 8 was too large. It's now split into 5 focused sub-phases,
+each independently shippable with its own tests.
+
+### Phase 8A — `decisions` Command (Interactive ADRs) ✅ COMPLETE
+**Scope:** Implement the `decisions add`, `decisions list`, and `decisions remove` CLI stubs.
+**Agent Flow:** Planner → Developer → Tester → Doc Writer
+
+| # | Task | Status |
+|---|---|---|
+| 1 | Wire `decisions list` — read `.codebase/decisions.json` via `DecisionLog`, display with Rich table | ✅ done |
+| 2 | Wire `decisions add` — interactive `typer.prompt()` for title, context, choice, alternatives, consequences → save via `DecisionLog.add_decision()` | ✅ done |
+| 3 | Add `decisions remove <index>` subcommand — remove by index with `--force` flag | ✅ done |
+| 4 | Tests: test_cli.py additions for decisions add/list/remove (5 tests) | ✅ done |
+| 5 | Update docs/progress.md | ✅ done |
+
+---
+
+### Phase 8B — `diff` Command (Change Detection) ✅ COMPLETE
+**Scope:** Compare current codebase state with last scan in `.codebase/project.json`.
+**Agent Flow:** Planner → Architect → Developer → Tester
+
+| # | Task | Status |
+|---|---|---|
+| 1 | Create `src/codebase_md/scanner/differ.py` — compare two `ProjectModel` instances, produce `DiffResult` with added/removed/changed modules, deps, languages, conventions, architecture | ✅ done |
+| 2 | `DiffResult`, `ModuleChange`, `DependencyChange`, `ConventionChange` Pydantic models (frozen) | ✅ done |
+| 3 | Wire `diff` CLI command — run a quick scan (no persist), compare with stored model, display changes with Rich + `format_diff()` | ✅ done |
+| 4 | Tests: `test_differ.py` — 18 tests (no changes, added/removed languages, added/removed/modified modules, added/removed/version-changed deps, convention changes, architecture changes, format output, model defaults, frozen check) | ✅ done |
+| 5 | Update docs/progress.md | ✅ done |
+
+---
+
+### Phase 8C — `watch` Command (File Watcher) ✅ COMPLETE
+**Scope:** Monitor project for file changes, auto re-scan and regenerate.
+**Agent Flow:** Planner → Developer → Tester
+
+| # | Task | Status |
+|---|---|---|
+| 1 | Wire `watch` CLI command — poll-based watcher with configurable `--interval`, uses `differ.compute_diff()` to detect changes, auto re-scans + regenerates all configured formats | ✅ done |
+| 2 | Ctrl+C graceful shutdown, initial scan if none exists | ✅ done |
+| 3 | Tests: watch help text test | ✅ done |
+
+**Design Decision:** Used simple poll-based approach (no external dependency) instead of `watchfiles`. The scanner already handles file walking efficiently, and `compute_diff()` detects meaningful changes. This avoids adding a new dependency for v1.
+
+---
+
+### Phase 8D — Real-World Testing & Bug Fixes
+**Scope:** Test on 5-10 diverse open-source repos, fix bugs found.
+**Agent Flow:** Tester → Developer → Code Reviewer
+
+| # | Task | Status |
+|---|---|---|
+| 1 | Test on a Next.js app (e.g., `vercel/next.js` or a starter) | not started |
+| 2 | Test on a FastAPI app (e.g., `tiangolo/fastapi` or a starter) | not started |
+| 3 | Test on a Django app (e.g., `django/django` or cookiecutter-django) | not started |
+| 4 | Test on a monorepo (e.g., `vercel/turborepo` or lerna-based) | not started |
+| 5 | Test on a Go project (e.g., a Go CLI tool) | not started |
+| 6 | Test on a Rust project (e.g., a Cargo-based CLI) | not started |
+| 7 | Fix bugs and edge cases found during testing | not started |
+| 8 | Create `tests/fixtures/` sample repos for regression testing | not started |
+| 9 | Update docs/progress.md | not started |
+
+**Dependencies:** Phases 8A–8C (COMPLETE)
+**Effort:** Large — unpredictable, depends on bugs found
+
+---
+
+### Phase 8E — Release Preparation & PyPI Publish
+**Scope:** Final polish, version bump, tag release, publish to PyPI.
+**Agent Flow:** Code Reviewer → Security Reviewer → Doc Writer → Developer
+
+| # | Task | Status |
+|---|---|---|
+| 1 | Security review — audit all modules for vulnerabilities, unsafe patterns | not started |
+| 2 | Code review — full codebase review for quality, consistency, edge cases | not started |
+| 3 | Version bump to 0.2.0 (or 1.0.0 if stable enough) | not started |
+| 4 | Update CHANGELOG.md (create if missing) | not started |
+| 5 | Final README review — ensure install/usage is accurate | not started |
+| 6 | Tag `v0.2.0`, push → triggers publish.yml → PyPI | not started |
+| 7 | Verify `pip install codebase-md` works from PyPI | not started |
+| 8 | Update docs/progress.md — COMPLETE | not started |
+
+**Dependencies:** Phase 8D (must be stable first)
+**Effort:** Medium — review-heavy, mostly non-code work
 
 ---
 
@@ -26,9 +105,9 @@
 | File | Status | Notes |
 |---|---|---|
 | `pyproject.toml` | COMPLETE | Deps, scripts, ruff, mypy, pytest configured |
-| `README.md` | COMPLETE | Project README with install + usage |
+| `README.md` | COMPLETE | Full rewrite: badges, features, install, CLI commands, output formats, architecture, config |
 | `src/codebase_md/__init__.py` | COMPLETE | Version 0.1.0 |
-| `src/codebase_md/cli.py` | COMPLETE | Typer app, 8 commands — scan, init, generate are LIVE, rest are stubs |
+| `src/codebase_md/cli.py` | COMPLETE | Typer app, 8 commands — all LIVE (scan, init, generate, deps, context, hooks, decisions, diff, watch) |
 | `src/codebase_md/model/__init__.py` | COMPLETE | Re-exports all model classes |
 | `src/codebase_md/model/architecture.py` | COMPLETE | ArchitectureType, ServiceInfo, ArchitectureInfo |
 | `src/codebase_md/model/convention.py` | COMPLETE | NamingConvention, ImportStyle, ConventionSet |
@@ -44,6 +123,7 @@
 | `src/codebase_md/scanner/convention_inferrer.py` | COMPLETE | Tree-sitter + regex convention detection: naming, imports, file org, test patterns, design patterns |
 | `src/codebase_md/scanner/ast_analyzer.py` | COMPLETE | Tree-sitter AST analysis: exports, imports, purpose inference for Python/JS/TS |
 | `src/codebase_md/scanner/git_analyzer.py` | COMPLETE | Git history: commits, contributors, hotspots, recent files, branch |
+| `src/codebase_md/scanner/differ.py` | COMPLETE | Diff engine: compare two ProjectModel instances, DiffResult + format_diff |
 | `src/codebase_md/persistence/__init__.py` | COMPLETE | Package init |
 | `src/codebase_md/persistence/store.py` | COMPLETE | Store class — init, read/write config + project.json |
 | `src/codebase_md/persistence/decisions.py` | COMPLETE | DecisionLog class — add/list decisions |
@@ -71,12 +151,13 @@
 | `src/codebase_md/integrations/git_hooks.py` | COMPLETE | HookType enum, install/remove/list hooks, backup & restore, marker identification |
 | `src/codebase_md/integrations/github_action.py` | COMPLETE | ActionConfig model, generate_workflow(), write_workflow() |
 | `tests/conftest.py` | COMPLETE | Shared fixtures: sample models, sample_python_project, initialized_project |
-| `tests/test_cli.py` | COMPLETE | 12 CLI tests (version, init, scan, generate, hooks, context, help) |
+| `tests/test_cli.py` | COMPLETE | 21 CLI tests (version, init, scan, generate, hooks, context, decisions, diff, watch, help) |
 | `tests/test_model/test_models.py` | COMPLETE | 19 model tests (all Pydantic models) |
 | `tests/test_scanner/test_language_detector.py` | COMPLETE | 8 language detection tests |
 | `tests/test_scanner/test_structure_analyzer.py` | COMPLETE | 6 structure analysis tests |
 | `tests/test_scanner/test_dependency_parser.py` | COMPLETE | 8 dependency parsing tests |
 | `tests/test_scanner/test_engine.py` | COMPLETE | 7 engine integration tests |
+| `tests/test_scanner/test_differ.py` | COMPLETE | 18 differ tests (no-change, languages, modules, deps, conventions, arch, format, model) |
 | `tests/test_generators/test_generators.py` | COMPLETE | 18+ generator tests (all 6 formats) |
 | `tests/test_depshift/test_version_differ.py` | COMPLETE | 9 version differ tests |
 | `tests/test_depshift/test_analyzer.py` | COMPLETE | 5 analyzer tests |
@@ -85,6 +166,8 @@
 | `tests/test_persistence/test_store.py` | COMPLETE | 10 persistence tests |
 | `tests/test_integrations/test_git_hooks.py` | COMPLETE | 14 git hooks tests |
 | `tests/test_integrations/test_github_action.py` | COMPLETE | 13 GitHub action tests |
+| `CONTRIBUTING.md` | COMPLETE | Dev setup, code style, testing, PR process, adding generators |
+| `.github/workflows/publish.yml` | COMPLETE | PyPI trusted publisher (OIDC, triggers on v* tag push) |
 | `.github/copilot-instructions.md` | COMPLETE | Project context for Copilot |
 | `.github/workflows/ci.yml` | COMPLETE | CI pipeline (ruff, mypy, pytest) |
 | `CLAUDE.md` | COMPLETE | Cross-tool context |
@@ -167,9 +250,11 @@
 - [x] integrations/github_action.py — ActionConfig model, generate_workflow(), write_workflow()
 - [x] CLI wired: `codebase hooks` fully functional (install/remove/status actions)
 - [x] tests/ — 173 tests across 12 files, all passing (ruff ✅, mypy ✅, pytest ✅)
-- [ ] README.md — comprehensive usage examples
-- [ ] CONTRIBUTING.md — contributor guide
-- [ ] Publish to PyPI
+- [x] README.md — full rewrite with badges, features, install, CLI commands, output formats, architecture, config
+- [x] CONTRIBUTING.md — dev setup, code style, testing, PR process, adding generators
+- [x] `.github/workflows/publish.yml` — PyPI trusted publisher (OIDC, v* tag trigger)
+- [x] pyproject.toml — URLs fixed to correct GitHub username (sauravanand542)
+- [ ] ~~Publish to PyPI~~ — DEFERRED until stable (test on real projects first)
 
 ---
 
@@ -188,10 +273,14 @@
 | 9 | Build tool | hatchling | 2026-03-04 | Modern Python packaging standard |
 | 10 | AI coding tool | VS Code + Copilot (primary) | 2026-03-04 | Builder's preference |
 | 11 | Multi-agent workflow | agents/ directory with .md prompts | 2026-03-04 | Context preservation across sessions |
+| 12 | PyPI publish | Deferred until stable | 2026-03-05 | Perfect first, beta test via git install, publish when battle-tested |
 
 ## Known Issues
 
-None. Phases 1–6 are complete, Phase 7 integrations + tests are complete. All checks pass (ruff, mypy, pytest — 43 source files, 173 tests).
+- No real-world testing beyond codebase-md itself
+- PyPI publish deferred until tool is battle-tested on diverse projects
+
+All checks pass (ruff, mypy, pytest — 44 source files, 200 tests).
 
 ## Session Log
 
@@ -330,3 +419,34 @@ None. Phases 1–6 are complete, Phase 7 integrations + tests are complete. All 
 - **Tester**: pytest ✅ — 173 tests pass in 0.99s (fixed pyproject.toml format for regex parser, structure analyzer default type, ranker empty query error handling)
 - **Doc-writer**: updated docs/progress.md with Phase 7 progress
 - **Phase 7 IN PROGRESS** — integrations + tests complete, remaining: README.md, CONTRIBUTING.md, PyPI publish
+- **GitHub**: pushed to https://github.com/sauravanand542/codebase-md (force push, HTTPS remote)
+
+### Session 9 (2026-03-05)
+- **Orchestrator**: read progress.md, confirmed Phase 7 remaining: README.md, CONTRIBUTING.md, publish workflow
+- **Planner**: designed 3 deliverables + 1 fix (pyproject.toml URLs)
+- **Developer**: rewrote README.md — badges (CI, Python, License, Tests), "Why?" section, features list, install from GitHub (+ AST extra), quick start, all 6 CLI commands with examples, output formats table, "What Gets Detected" section, project structure, config example, contributing link
+- **Developer**: created CONTRIBUTING.md — dev setup, code style (ruff, mypy, conventions), example code, project structure, testing guide (fixtures, tips), adding generators tutorial, PR process with checklist, architecture overview
+- **Developer**: created `.github/workflows/publish.yml` — 3-job pipeline (build → test → publish), triggers on v* tag push, uses PyPI trusted publishing (OIDC, no API tokens), builds sdist+wheel, uploads artifacts
+- **Developer**: fixed pyproject.toml `[project.urls]` — `saurav` → `sauravanand542` across Homepage, Repository, Issues
+- **Tester**: ruff check ✅ — all source + test files pass
+- **Tester**: mypy ✅ — 43 source files, zero issues
+- **Tester**: pytest ✅ — 173 tests pass in 1.10s
+- **Doc-writer**: updated docs/progress.md with Phase 7 completion
+
+### Session 10 (2026-03-05)
+- **Orchestrator**: read progress.md, determined Phase 8 is next, agreed it's too large, designed 5 sub-phases (8A–8E)
+- **Planner**: broke Phase 8 into: 8A (decisions CLI), 8B (diff engine + CLI), 8C (watch CLI), 8D (real-world testing), 8E (release + PyPI)
+- **Developer**: implemented `decisions add` — interactive prompts for title/context/choice/alternatives/consequences → `DecisionLog.add_decision()`
+- **Developer**: implemented `decisions list` — reads `.codebase/decisions.json`, displays Rich table with #, date, title, choice, alternatives
+- **Developer**: implemented `decisions remove <index>` — removes by 1-based index with `--force` flag and confirmation prompt
+- **Developer**: created `src/codebase_md/scanner/differ.py` — `compute_diff()` compares two `ProjectModel` instances, 4 Pydantic models (`DiffResult`, `ModuleChange`, `DependencyChange`, `ConventionChange`), `format_diff()` for human-readable output
+- **Developer**: wired `diff` CLI command — loads previous scan, runs fresh scan (no persist), computes diff, displays with Rich
+- **Developer**: wired `watch` CLI command — poll-based with `--interval` flag, uses `compute_diff()` for change detection, auto re-scans + regenerates, Ctrl+C graceful shutdown
+- **Tester**: created `tests/test_scanner/test_differ.py` — 18 tests (no changes, languages, modules, deps, conventions, architecture, format output, model defaults, frozen)
+- **Tester**: added 9 CLI tests to `tests/test_cli.py` — decisions add/list/remove, diff (requires scan, no changes), watch help
+- **Tester**: ruff check ✅, mypy ✅, pytest ✅ — 200 tests pass in 0.98s
+- **Doc-writer**: updated docs/progress.md, archietecture_plan.md, agents/planner.md
+- **Phase 8A, 8B, 8C COMPLETE** — all CLI stubs now fully implemented
+- **No CLI stubs remaining** — all commands are live: scan, init, generate, deps, context, hooks, decisions, diff, watch
+- **Next**: Phase 8D (real-world testing on diverse repos)
+- **Phase 7 COMPLETE** — all deliverables shipped, PyPI deferred to Phase 8

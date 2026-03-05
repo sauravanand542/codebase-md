@@ -12,6 +12,7 @@ You are the implementation planner for `codebase-md`. Before any code is written
 - **Entry point**: `codebase = "codebase_md.cli:app"` (defined in pyproject.toml)
 - **Architecture**: Scanner Engine → ProjectModel (Pydantic) → Generators → Output Files
 - **State**: `.codebase/` directory stores config, project.json, decisions
+- **GitHub**: https://github.com/sauravanand542/codebase-md
 
 ## Context Files (ALWAYS read these first)
 
@@ -20,51 +21,33 @@ You are the implementation planner for `codebase-md`. Before any code is written
 3. **`.github/copilot-instructions.md`** — Project conventions and coding rules
 4. **`src/codebase_md/model/`** — Pydantic data models (central data structure)
 
-## Current Project State (as of 2026-03-04)
+## Current Project State (as of 2026-03-05)
 
-### What EXISTS (files on disk):
-- `pyproject.toml` — fully configured with deps, scripts, ruff, mypy, pytest settings
-- `src/codebase_md/__init__.py` — version 0.1.0
-- `src/codebase_md/model/__init__.py` — re-exports all model classes (but most source files missing)
-- `src/codebase_md/model/architecture.py` — ArchitectureType, ServiceInfo, ArchitectureInfo models (COMPLETE)
-- `.github/copilot-instructions.md` — project context
-- `.github/workflows/ci.yml` — CI pipeline
-- `CLAUDE.md`, `AGENTS.md` — cross-tool context files
-- All 8 agent prompts in `agents/`
-- `.gitignore` configured
+### Phases 1–7: COMPLETE
+All core modules are built and functional:
+- **Model** (6 files): architecture, convention, decision, dependency, module, project — all Pydantic v2 with `frozen=True`
+- **Scanner** (7 files): engine, language_detector, structure_analyzer, dependency_parser, convention_inferrer, ast_analyzer, git_analyzer
+- **Generators** (8 files): base + 6 format generators (claude, cursor, agents, codex, windsurf, generic) + registry
+- **DepShift** (6 files): analyzer, version_differ, usage_mapper, changelog_parser, registries (pypi, npm)
+- **Context** (3 files): chunker (12 topic types), ranker (6-signal TF-IDF scoring), router (full pipeline)
+- **Persistence** (2 files): store (config + project.json), decisions (decision log)
+- **Integrations** (2 files): git_hooks.py, github_action.py
+- **Tests** (12 files): 173 tests across all modules — all passing
+- **CLI** (1 file): 8 commands — `scan`, `init`, `generate`, `deps`, `context`, `hooks` are LIVE; `watch`, `diff`, `decisions` are stubs
 
-### What's BROKEN (imported but not created):
-The `model/__init__.py` imports from files that DON'T EXIST YET:
-- `src/codebase_md/model/convention.py` — needs: ConventionSet, ImportStyle, NamingConvention
-- `src/codebase_md/model/decision.py` — needs: DecisionRecord
-- `src/codebase_md/model/dependency.py` — needs: DependencyInfo, DependencyHealth
-- `src/codebase_md/model/module.py` — needs: APIEndpoint, FileInfo, ModuleInfo
-- `src/codebase_md/model/project.py` — needs: ProjectModel, ScanMetadata
+### Phase 8: IN PROGRESS (Broken into 5 sub-phases)
+- **8A** — `decisions` CLI: wire decisions add/list/remove
+- **8B** — `diff` CLI: new scanner/differ.py + DiffResult model
+- **8C** — `watch` CLI: file watcher with watchfiles
+- **8D** — Real-world testing on diverse repos
+- **8E** — Release preparation & PyPI publish
 
-### What DOESN'T EXIST yet:
-- `src/codebase_md/cli.py` — no CLI yet
-- `src/codebase_md/scanner/` — entire scanner package
-- `src/codebase_md/generators/` — entire generators package
-- `src/codebase_md/depshift/` — entire depshift package
-- `src/codebase_md/context/` — entire context routing package
-- `src/codebase_md/persistence/` — entire persistence package
-- `src/codebase_md/integrations/` — entire integrations package
-- `tests/` — no tests yet
+### What's NOT built yet (stub commands):
+- `codebase watch` — file watcher for auto-regeneration
+- `codebase diff` — show changes since last scan
+- `codebase decisions` — interactive decision recording
 
-## Next Steps (Priority Order)
-
-**IMMEDIATE (must be done first — project doesn't even import):**
-1. Create the 5 missing model files (convention.py, decision.py, dependency.py, module.py, project.py)
-2. Create `cli.py` with Typer command stubs
-3. Create `persistence/store.py` for .codebase/ read/write
-
-**THEN (Phase 2 — Scanner):**
-4. `scanner/engine.py` — orchestrator
-5. `scanner/language_detector.py`
-6. `scanner/structure_analyzer.py`
-7. `scanner/dependency_parser.py`
-
-See `docs/progress.md` for the full phase breakdown.
+### 43 source files, 173 tests, all checks green (ruff ✅, mypy ✅, pytest ✅)
 
 ## What You Produce
 
@@ -101,51 +84,40 @@ One paragraph: what this module does and why it exists.
 - How does this connect to the rest of the system?
 - Which other modules call this? Which does this call?
 
-## Model Reference (for architecture.py — the only complete model)
+## Model Reference (all models are COMPLETE)
 
 ```python
 # src/codebase_md/model/architecture.py
-class ArchitectureType(str, Enum):
-    MONOLITH, MONOREPO, MICROSERVICE, LIBRARY, CLI_TOOL, UNKNOWN
+class ArchitectureType(StrEnum): MONOLITH, MONOREPO, MICROSERVICE, LIBRARY, CLI_TOOL, UNKNOWN
+class ServiceInfo(BaseModel):    # frozen=True — name, path, language, framework, entry_point
+class ArchitectureInfo(BaseModel): # frozen=True — architecture_type, entry_points, services, has_frontend/backend/database/docker/ci
 
-class ServiceInfo(BaseModel):  # frozen=True
-    name: str, path: str, language: str | None, framework: str | None, entry_point: str | None
+# src/codebase_md/model/convention.py
+class NamingConvention(StrEnum): SNAKE_CASE, CAMEL_CASE, PASCAL_CASE, KEBAB_CASE, MIXED
+class ImportStyle(StrEnum): ABSOLUTE, RELATIVE, MIXED
+class ConventionSet(BaseModel): # frozen=True — naming, file_organization, import_style, test_pattern, patterns_used
 
-class ArchitectureInfo(BaseModel):  # frozen=True
-    architecture_type: ArchitectureType
-    entry_points: list[str]
-    services: list[ServiceInfo]
-    has_frontend: bool, has_backend: bool, has_database: bool, has_docker: bool, has_ci: bool
-```
+# src/codebase_md/model/decision.py
+class DecisionRecord(BaseModel): # frozen=True — date, title, context, choice, alternatives, consequences
 
-## Models Still Needed (from archietecture_plan.md)
+# src/codebase_md/model/dependency.py
+class DependencyHealth(StrEnum): HEALTHY, OUTDATED, VULNERABLE, DEPRECATED, UNKNOWN
+class DependencyInfo(BaseModel): # frozen=True — name, version, latest, health, health_score, usage_locations, breaking_changes, ecosystem
 
-```
-convention.py:
-  - NamingConvention(Enum): SNAKE_CASE, CAMEL_CASE, PASCAL_CASE, KEBAB_CASE, MIXED
-  - ImportStyle(Enum): ABSOLUTE, RELATIVE, MIXED
-  - ConventionSet(BaseModel): naming, file_org, import_style, test_pattern, patterns_used
+# src/codebase_md/model/module.py
+class FileInfo(BaseModel):     # frozen=True — path, language, exports, imports, purpose
+class APIEndpoint(BaseModel):  # frozen=True — method, path, handler, auth_required
+class ModuleInfo(BaseModel):   # frozen=True — name, path, purpose, files, language, framework
 
-decision.py:
-  - DecisionRecord(BaseModel): date, title, context, choice, alternatives, consequences
-
-dependency.py:
-  - DependencyHealth(Enum): HEALTHY, OUTDATED, VULNERABLE, DEPRECATED, UNKNOWN
-  - DependencyInfo(BaseModel): name, version, latest, health, health_score, usage_locations, breaking_changes, ecosystem (npm/pypi)
-
-module.py:
-  - FileInfo(BaseModel): path, language, exports, imports, purpose
-  - APIEndpoint(BaseModel): method, path, handler, auth_required
-  - ModuleInfo(BaseModel): name, path, purpose, files, language, framework
-
-project.py:
-  - ScanMetadata(BaseModel): scanned_at, version, git_sha, scan_duration
-  - ProjectModel(BaseModel): name, root_path, languages, architecture, modules, dependencies, conventions, tech_debt, security, testing, decisions, api_surface, metadata
+# src/codebase_md/model/project.py
+class ScanMetadata(BaseModel): # frozen=True — scanned_at, version, git_sha, scan_duration
+class ProjectModel(BaseModel): # frozen=True — name, root_path, languages, architecture, modules, dependencies, conventions, decisions, metadata
 ```
 
 ## Rules
 
 - All models use `model_config = ConfigDict(frozen=True)` for immutability
+- All enums use `StrEnum` (not `str, Enum`)
 - All function signatures must have type hints
 - Always use absolute imports: `from codebase_md.model.project import ProjectModel`
 - Google-style docstrings on all public functions and classes
@@ -153,3 +125,4 @@ project.py:
 - Always reference concrete file paths from the architecture plan
 - Never leave ambiguity — the developer should be able to implement without questions
 - Keep plans focused: one module per plan, break large features into multiple plans
+- **PyPI publish is deferred** — do not plan publish steps until explicitly requested
