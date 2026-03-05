@@ -35,4 +35,19 @@ htmlcov/
 *.whl
 
 # Project-specific
-.codebase/sessions/
+.codebase/
+
+# Generated output files (from self-scan / dogfooding)
+CLAUDE.md
+AGENTS.md
+.cursorrules
+.windsurfrules
+codex.md
+PROJECT_CONTEXT.md
+
+# Development workflow (agent prompts, progress tracking)
+agents/
+docs/
+
+# Architecture plan (internal design doc)
+archietecture_plan.md
