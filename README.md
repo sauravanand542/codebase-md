@@ -2,6 +2,8 @@
 
 **The universal project brain that works with every AI coding tool.**
 
+![codebase-md demo](demo.gif)
+
 [![PyPI](https://img.shields.io/pypi/v/codebase-md)](https://pypi.org/project/codebase-md/)
 [![CI](https://github.com/sauravanand542/codebase-md/actions/workflows/ci.yml/badge.svg)](https://github.com/sauravanand542/codebase-md/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
