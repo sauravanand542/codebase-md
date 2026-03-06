@@ -53,8 +53,8 @@ def compare_versions(current: str, latest: str) -> VersionDiffResult:
     Returns:
         VersionDiffResult with the gap analysis.
     """
-    cur_parts = _parse_version(current)
-    lat_parts = _parse_version(latest)
+    cur_parts = parse_version(current)
+    lat_parts = parse_version(latest)
 
     major_diff = max(0, lat_parts[0] - cur_parts[0])
     minor_diff = max(0, lat_parts[1] - cur_parts[1]) if major_diff == 0 else 0
@@ -93,7 +93,7 @@ def compare_versions(current: str, latest: str) -> VersionDiffResult:
     )
 
 
-def _parse_version(version: str) -> tuple[int, int, int]:
+def parse_version(version: str) -> tuple[int, int, int]:
     """Parse a version string into (major, minor, patch) tuple.
 
     Handles various formats:

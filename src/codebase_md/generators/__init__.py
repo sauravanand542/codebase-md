@@ -72,14 +72,14 @@ def get_generator(format_name: str) -> type[BaseGenerator]:
     return registry[format_name]
 
 
-AVAILABLE_FORMATS = [
+AVAILABLE_FORMATS: tuple[str, ...] = (
     "claude",
     "cursor",
     "agents",
     "codex",
     "windsurf",
     "generic",
-]
+)
 
 __all__ = [
     "AVAILABLE_FORMATS",

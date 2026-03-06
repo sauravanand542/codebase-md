@@ -71,6 +71,25 @@ class DecisionLog:
         self._write_decisions(decisions)
         return decision
 
+    def remove_decision(self, index: int) -> DecisionRecord:
+        """Remove a decision by 1-based index.
+
+        Args:
+            index: 1-based index of the decision to remove.
+
+        Returns:
+            The removed DecisionRecord.
+
+        Raises:
+            DecisionLogError: If the index is invalid or write fails.
+        """
+        records = self.list_decisions()
+        if index < 1 or index > len(records):
+            raise DecisionLogError(f"Invalid decision index {index}. Valid range: 1-{len(records)}")
+        removed = records.pop(index - 1)
+        self._write_decisions(records)
+        return removed
+
     def _write_decisions(self, decisions: list[DecisionRecord]) -> None:
         """Write the full decision list to disk.
 

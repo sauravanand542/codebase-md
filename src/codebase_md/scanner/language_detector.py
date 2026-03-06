@@ -145,11 +145,8 @@ def _should_exclude(path: Path, exclude: list[str]) -> bool:
     for part in path.parts:
         if part in exclude:
             return True
-        # Handle glob-like patterns (e.g. *.egg-info)
-        for pattern in exclude:
-            if "*" in pattern and path.match(pattern):
-                return True
-    return False
+    # Check glob patterns separately (only once, not per part)
+    return any("*" in pattern and path.match(pattern) for pattern in exclude)
 
 
 def detect_languages(

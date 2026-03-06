@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 
 from codebase_md.model.convention import ConventionSet, ImportStyle, NamingConvention
+from codebase_md.scanner.ast_analyzer import _get_js_parser, _get_python_parser, _get_ts_parser
 from codebase_md.scanner.language_detector import DEFAULT_EXCLUDES, EXTENSION_MAP, _should_exclude
 
 # Maximum number of files to sample for convention detection
@@ -391,11 +392,7 @@ def _extract_identifiers_python_treesitter(content: bytes) -> list[str]:
     Returns:
         List of identifier names (function names, variable names).
     """
-    import tree_sitter as ts
-    import tree_sitter_python as tspython
-
-    py_lang = ts.Language(tspython.language())
-    parser = ts.Parser(py_lang)
+    _lang, parser = _get_python_parser()
     tree = parser.parse(content)
 
     identifiers: list[str] = []
@@ -484,18 +481,11 @@ def _extract_identifiers_js_ts_treesitter(content: bytes, is_typescript: bool) -
     Returns:
         List of identifier names.
     """
-    import tree_sitter as ts
-
     if is_typescript:
-        import tree_sitter_typescript as tsts
-
-        lang = ts.Language(tsts.language_typescript())
+        _lang, parser = _get_ts_parser()
     else:
-        import tree_sitter_javascript as tsjs
+        _lang, parser = _get_js_parser()
 
-        lang = ts.Language(tsjs.language())
-
-    parser = ts.Parser(lang)
     tree = parser.parse(content)
 
     identifiers: list[str] = []

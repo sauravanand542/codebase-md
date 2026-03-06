@@ -7,6 +7,7 @@ entry points, services, and logical modules.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from codebase_md.model.architecture import ArchitectureInfo, ArchitectureType, ServiceInfo
@@ -33,31 +34,33 @@ MONOREPO_MARKERS: list[str] = [
 ]
 
 # Well-known entry point filenames
-ENTRY_POINT_NAMES: list[str] = [
-    "main.py",
-    "app.py",
-    "manage.py",
-    "wsgi.py",
-    "asgi.py",
-    "index.ts",
-    "index.js",
-    "index.tsx",
-    "index.jsx",
-    "main.ts",
-    "main.js",
-    "main.go",
-    "main.rs",
-    "lib.rs",
-    "Main.java",
-    "App.java",
-    "Program.cs",
-    "server.ts",
-    "server.js",
-    "server.py",
-    "cli.py",
-    "cli.ts",
-    "cli.js",
-]
+ENTRY_POINT_NAMES: frozenset[str] = frozenset(
+    {
+        "main.py",
+        "app.py",
+        "manage.py",
+        "wsgi.py",
+        "asgi.py",
+        "index.ts",
+        "index.js",
+        "index.tsx",
+        "index.jsx",
+        "main.ts",
+        "main.js",
+        "main.go",
+        "main.rs",
+        "lib.rs",
+        "Main.java",
+        "App.java",
+        "Program.cs",
+        "server.ts",
+        "server.js",
+        "server.py",
+        "cli.py",
+        "cli.ts",
+        "cli.js",
+    }
+)
 
 # Directories that indicate frontend
 FRONTEND_INDICATORS: set[str] = {
@@ -230,8 +233,8 @@ def _detect_architecture_type(root_path: Path, exclude: list[str]) -> Architectu
     # Check for microservice indicators (multiple Dockerfiles or docker-compose with services)
     dockerfile_count = sum(
         1
-        for _ in root_path.rglob("Dockerfile")
-        if not _should_exclude(_.relative_to(root_path), exclude)
+        for p in root_path.rglob("Dockerfile")
+        if not _should_exclude(p.relative_to(root_path), exclude)
     )
     if dockerfile_count > 2:
         return ArchitectureType.MICROSERVICE
@@ -279,8 +282,6 @@ def _is_workspace_root(root_path: Path) -> bool:
     Returns:
         True if workspace configuration is detected.
     """
-    import json
-
     package_json = root_path / "package.json"
     if package_json.is_file():
         try:
@@ -355,8 +356,6 @@ def _is_cli_tool(root_path: Path) -> bool:
             pass
 
     # Check for bin field in package.json
-    import json
-
     package_json = root_path / "package.json"
     if package_json.is_file():
         try:

@@ -92,6 +92,11 @@ def scan(
     parses dependencies, infers conventions, and saves the result
     to .codebase/project.json.
     """
+    if depth not in ("full", "shallow"):
+        console.print(
+            f"[bold red]Error:[/bold red] Invalid depth '{depth}'. Must be 'full' or 'shallow'."
+        )
+        raise typer.Exit(code=1)
     console.print(f"[bold blue]Scanning[/bold blue] {path.resolve()} [dim](depth={depth})[/dim]")
 
     from codebase_md.scanner.engine import ScannerError, scan_project
@@ -567,10 +572,9 @@ def decisions_remove(
             console.print("[dim]Cancelled.[/dim]")
             raise typer.Exit()
 
-    # Remove and write back
-    remaining = [r for i, r in enumerate(records) if i != index - 1]
+    # Remove using public API
     try:
-        log._write_decisions(remaining)
+        log.remove_decision(index)
         console.print(f"[bold green]Removed[/bold green] decision #{index}: {target.title}")
     except DecisionLogError as e:
         console.print(f"[bold red]Error:[/bold red] {e}")

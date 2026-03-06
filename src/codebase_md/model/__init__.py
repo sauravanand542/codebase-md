@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from codebase_md.model.architecture import ArchitectureInfo, ArchitectureType
+from codebase_md.model.architecture import ArchitectureInfo, ArchitectureType, ServiceInfo
 from codebase_md.model.convention import (
     ConventionSet,
     ImportStyle,
@@ -28,4 +28,5 @@ __all__ = [
     "NamingConvention",
     "ProjectModel",
     "ScanMetadata",
+    "ServiceInfo",
 ]

@@ -10,7 +10,9 @@ Supports Python, JavaScript, and TypeScript with regex fallback.
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from codebase_md.model.module import FileInfo
 from codebase_md.scanner.language_detector import DEFAULT_EXCLUDES, EXTENSION_MAP, _should_exclude
@@ -181,6 +183,64 @@ def _infer_purpose(file_path: Path, content: str, exports: list[str]) -> str:
     return max(scores, key=lambda k: scores[k])
 
 
+# --- Tree-sitter Parser Cache ---
+# Parser/language objects are expensive to construct — cache them as singletons.
+
+
+@lru_cache(maxsize=1)
+def _get_python_parser() -> tuple[Any, Any]:
+    """Get cached Python tree-sitter language and parser.
+
+    Returns:
+        Tuple of (Language, Parser) for Python.
+
+    Raises:
+        ImportError: If tree-sitter-python is not installed.
+    """
+    import tree_sitter as ts
+    import tree_sitter_python as tspython
+
+    py_lang = ts.Language(tspython.language())
+    parser = ts.Parser(py_lang)
+    return py_lang, parser
+
+
+@lru_cache(maxsize=1)
+def _get_js_parser() -> tuple[Any, Any]:
+    """Get cached JavaScript tree-sitter language and parser.
+
+    Returns:
+        Tuple of (Language, Parser) for JavaScript.
+
+    Raises:
+        ImportError: If tree-sitter-javascript is not installed.
+    """
+    import tree_sitter as ts
+    import tree_sitter_javascript as tsjs
+
+    js_lang = ts.Language(tsjs.language())
+    parser = ts.Parser(js_lang)
+    return js_lang, parser
+
+
+@lru_cache(maxsize=1)
+def _get_ts_parser() -> tuple[Any, Any]:
+    """Get cached TypeScript tree-sitter language and parser.
+
+    Returns:
+        Tuple of (Language, Parser) for TypeScript.
+
+    Raises:
+        ImportError: If tree-sitter-typescript is not installed.
+    """
+    import tree_sitter as ts
+    import tree_sitter_typescript as tsts
+
+    ts_lang = ts.Language(tsts.language_typescript())
+    parser = ts.Parser(ts_lang)
+    return ts_lang, parser
+
+
 # --- Python AST Analysis ---
 
 
@@ -232,11 +292,7 @@ def _parse_python_treesitter(content: bytes) -> tuple[list[str], list[str]]:
     Returns:
         Tuple of (exports, imports).
     """
-    import tree_sitter as ts
-    import tree_sitter_python as tspython
-
-    py_lang = ts.Language(tspython.language())
-    parser = ts.Parser(py_lang)
+    _lang, parser = _get_python_parser()
     tree = parser.parse(content)
 
     exports: list[str] = []
@@ -381,18 +437,11 @@ def _parse_js_ts_treesitter(content: bytes, is_typescript: bool) -> tuple[list[s
     Returns:
         Tuple of (exports, imports).
     """
-    import tree_sitter as ts
-
     if is_typescript:
-        import tree_sitter_typescript as tsts
-
-        lang = ts.Language(tsts.language_typescript())
+        _lang, parser = _get_ts_parser()
     else:
-        import tree_sitter_javascript as tsjs
+        _lang, parser = _get_js_parser()
 
-        lang = ts.Language(tsjs.language())
-
-    parser = ts.Parser(lang)
     tree = parser.parse(content)
 
     exports: list[str] = []

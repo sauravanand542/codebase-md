@@ -168,8 +168,10 @@ def _diff_modules(old: ProjectModel, new: ProjectModel) -> list[ModuleChange]:
     changes: list[ModuleChange] = []
 
     # Added modules
+    new_by_name = {m.name: m for m in new.modules}
+    old_by_name = {m.name: m for m in old.modules}
     for name in sorted(new_names - old_names):
-        mod = next(m for m in new.modules if m.name == name)
+        mod = new_by_name[name]
         changes.append(
             ModuleChange(
                 name=name,
@@ -180,7 +182,7 @@ def _diff_modules(old: ProjectModel, new: ProjectModel) -> list[ModuleChange]:
 
     # Removed modules
     for name in sorted(old_names - new_names):
-        mod = next(m for m in old.modules if m.name == name)
+        mod = old_by_name[name]
         changes.append(
             ModuleChange(
                 name=name,
@@ -191,8 +193,8 @@ def _diff_modules(old: ProjectModel, new: ProjectModel) -> list[ModuleChange]:
 
     # Modified modules (same name but different file count or language)
     for name in sorted(old_names & new_names):
-        old_mod = next(m for m in old.modules if m.name == name)
-        new_mod = next(m for m in new.modules if m.name == name)
+        old_mod = old_by_name[name]
+        new_mod = new_by_name[name]
         diffs: list[str] = []
         if len(old_mod.files) != len(new_mod.files):
             diffs.append(f"files: {len(old_mod.files)} → {len(new_mod.files)}")

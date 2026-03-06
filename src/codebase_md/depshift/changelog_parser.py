@@ -33,7 +33,7 @@ class ChangelogEntry:
     is_breaking: bool = False
 
 
-@dataclass
+@dataclass(frozen=True)
 class ChangelogSummary:
     """Summary of changes between two versions.
 
@@ -206,14 +206,14 @@ def extract_changes_between(
     Returns:
         ChangelogSummary with filtered entries.
     """
-    from codebase_md.depshift.version_differ import _parse_version
+    from codebase_md.depshift.version_differ import parse_version
 
-    from_parts = _parse_version(from_version)
-    to_parts = _parse_version(to_version)
+    from_parts = parse_version(from_version)
+    to_parts = parse_version(to_version)
 
     relevant: list[ChangelogEntry] = []
     for entry in entries:
-        entry_parts = _parse_version(entry.version)
+        entry_parts = parse_version(entry.version)
         # Include if version is > from_version and <= to_version
         if _version_gt(entry_parts, from_parts) and _version_lte(entry_parts, to_parts):
             relevant.append(entry)

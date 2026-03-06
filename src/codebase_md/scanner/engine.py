@@ -8,12 +8,15 @@ results into a complete ProjectModel and persists it.
 
 from __future__ import annotations
 
+import json
+import re
+import subprocess
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 from codebase_md import __version__
-from codebase_md.model.architecture import ArchitectureInfo
+from codebase_md.model.architecture import ArchitectureInfo, ArchitectureType
 from codebase_md.model.convention import ConventionSet
 from codebase_md.model.dependency import DependencyInfo
 from codebase_md.model.module import FileInfo, ModuleInfo
@@ -110,8 +113,6 @@ def scan_project(
     # Always scan module directories for manifests (not just monorepo sub-packages).
     # Many projects keep manifests in subdirectories (e.g. backend/requirements.txt,
     # frontend/package.json) rather than at the project root.
-    from codebase_md.model.architecture import ArchitectureType as _ArchType
-
     extra_scan_dirs: list[Path] = []
     # Add module directories
     for mod in modules:
@@ -119,7 +120,7 @@ def scan_project(
         if mod_dir.is_dir() and mod_dir != root_path:
             extra_scan_dirs.append(mod_dir)
     # Add monorepo service directories (may differ from modules)
-    if architecture.architecture_type == _ArchType.MONOREPO and architecture.services:
+    if architecture.architecture_type == ArchitectureType.MONOREPO and architecture.services:
         for svc in architecture.services:
             svc_dir = root_path / svc.path
             if svc_dir.is_dir() and svc_dir not in extra_scan_dirs:
@@ -229,15 +230,11 @@ def _run_structure_analysis(
     Returns:
         Tuple of (ArchitectureInfo, list[ModuleInfo]).
     """
-    from codebase_md.model.architecture import (
-        ArchitectureInfo as _ArchitectureInfo,
-    )
-
     try:
         return analyze_structure(root_path, exclude)
     except StructureAnalysisError as e:
         warnings.append(f"Structure analysis failed: {e}")
-        return _ArchitectureInfo(), []
+        return ArchitectureInfo(), []
 
 
 def _run_dependency_parsing(
@@ -329,7 +326,8 @@ def _enrich_modules_with_ast(
     module_files: dict[str, list[FileInfo]] = {}
     for fi in file_infos:
         for mod in modules:
-            if fi.path.startswith(mod.path):
+            # Use path + "/" to avoid false matches (e.g. "src" matching "src_backup/")
+            if fi.path == mod.path or fi.path.startswith(mod.path + "/"):
                 module_files.setdefault(mod.path, []).append(fi)
                 break
 
@@ -408,8 +406,6 @@ def _get_git_sha(root_path: Path) -> str | None:
     Returns:
         The git HEAD SHA string, or None if not a git repo.
     """
-    import subprocess
-
     try:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
@@ -499,8 +495,6 @@ def _extract_project_description(
     package_json = root_path / "package.json"
     if package_json.is_file():
         try:
-            import json
-
             data = json.loads(package_json.read_text(encoding="utf-8"))
             desc = data.get("description", "")
             if desc and isinstance(desc, str):
@@ -597,7 +591,6 @@ def _extract_pyproject_description(content: str) -> str:
         pass
 
     # Regex fallback
-    import re
 
     match = re.search(r'^description\s*=\s*"([^"]*)"', content, re.MULTILINE)
     if match:
@@ -643,8 +636,15 @@ def _extract_build_commands(
         if scan_dir == root_path:
             prefix = ""
         else:
-            rel = scan_dir.relative_to(root_path)
-            prefix = f"cd {rel} && "
+            rel = str(scan_dir.relative_to(root_path))
+            # Sanitize path component for safe shell command display
+            safe_rel = (
+                rel.replace("\\", "\\\\")
+                .replace('"', '\\"')
+                .replace("$", "\\$")
+                .replace("`", "\\`")
+            )
+            prefix = f"cd {safe_rel} && "
 
         # Try pyproject.toml [project.scripts]
         pyproject_path = scan_dir / "pyproject.toml"
@@ -675,8 +675,6 @@ def _extract_build_commands(
         package_json = scan_dir / "package.json"
         if package_json.is_file():
             try:
-                import json
-
                 data = json.loads(package_json.read_text(encoding="utf-8"))
                 scripts = data.get("scripts", {})
                 if isinstance(scripts, dict):
@@ -694,8 +692,6 @@ def _extract_build_commands(
         if makefile_path.is_file():
             try:
                 content = makefile_path.read_text(encoding="utf-8")
-                import re
-
                 targets = re.findall(r"^([a-zA-Z_][a-zA-Z0-9_-]*):", content, re.MULTILINE)
                 useful_targets = [
                     t
@@ -766,8 +762,6 @@ def _extract_pyproject_commands(content: str, root_path: Path) -> list[str]:
         pass
 
     # Regex fallback
-    import re
-
     script_match = re.search(
         r"^\[project\.scripts\]\s*\n((?:[^\[].+\n)*)",
         content,

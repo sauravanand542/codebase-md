@@ -58,13 +58,36 @@ def parse_dependencies(
         ("Gemfile", _parse_gemfile),
     ]
 
+    # Scan root + extra directories using shared helper
+    dirs_to_scan = [root_path] + (list(extra_dirs) if extra_dirs else [])
+    for scan_dir in dirs_to_scan:
+        if not scan_dir.is_dir():
+            continue
+        _scan_directory_for_deps(scan_dir, parsers, seen_names, all_deps)
+
+    return all_deps
+
+
+def _scan_directory_for_deps(
+    directory: Path,
+    parsers: list[tuple[str, Callable[[Path], list[DependencyInfo]]]],
+    seen_names: set[str],
+    all_deps: list[DependencyInfo],
+) -> None:
+    """Scan a single directory for dependency manifests.
+
+    Args:
+        directory: Directory to scan for manifest files.
+        parsers: List of (filename, parser_fn) tuples.
+        seen_names: Set of already-seen "ecosystem:name" keys (mutated).
+        all_deps: List to append discovered dependencies to (mutated).
+    """
     for filename, parser_fn in parsers:
-        manifest_path = root_path / filename
+        manifest_path = directory / filename
         if manifest_path.is_file():
             try:
                 deps = parser_fn(manifest_path)
                 for dep in deps:
-                    # Avoid duplicates across different manifest files
                     key = f"{dep.ecosystem}:{dep.name}"
                     if key not in seen_names:
                         seen_names.add(key)
@@ -72,26 +95,6 @@ def parse_dependencies(
             except DependencyParseError:
                 # Log but continue with other parsers
                 continue
-
-    # Scan extra directories (monorepo sub-packages)
-    if extra_dirs:
-        for extra_dir in extra_dirs:
-            if not extra_dir.is_dir():
-                continue
-            for filename, parser_fn in parsers:
-                manifest_path = extra_dir / filename
-                if manifest_path.is_file():
-                    try:
-                        deps = parser_fn(manifest_path)
-                        for dep in deps:
-                            key = f"{dep.ecosystem}:{dep.name}"
-                            if key not in seen_names:
-                                seen_names.add(key)
-                                all_deps.append(dep)
-                    except DependencyParseError:
-                        continue
-
-    return all_deps
 
 
 def _parse_package_json(path: Path) -> list[DependencyInfo]:

@@ -214,8 +214,7 @@ class BaseGenerator(ABC):
         # Group by dep_type
         groups: dict[str, list[DependencyInfo]] = {}
         for dep in model.dependencies:
-            dtype = getattr(dep, "dep_type", "runtime")
-            groups.setdefault(dtype, []).append(dep)
+            groups.setdefault(dep.dep_type, []).append(dep)
 
         lines = ["## Dependencies", ""]
 

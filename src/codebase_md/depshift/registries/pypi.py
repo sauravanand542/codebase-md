@@ -42,6 +42,7 @@ class PyPIPackageInfo:
 
 _PYPI_BASE_URL = "https://pypi.org/pypi"
 _DEFAULT_TIMEOUT = 10.0
+_MAX_RESPONSE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
 async def fetch_package_info(
@@ -73,6 +74,9 @@ async def fetch_package_info(
         raise PyPIRegistryError(f"Package '{package_name}' not found on PyPI")
     if response.status_code != 200:
         raise PyPIRegistryError(f"PyPI returned HTTP {response.status_code} for '{package_name}'")
+
+    if len(response.content) > _MAX_RESPONSE_SIZE:
+        raise PyPIRegistryError(f"Response for '{package_name}' exceeds {_MAX_RESPONSE_SIZE} bytes")
 
     try:
         data = response.json()
@@ -111,6 +115,9 @@ def fetch_package_info_sync(
         raise PyPIRegistryError(f"Package '{package_name}' not found on PyPI")
     if response.status_code != 200:
         raise PyPIRegistryError(f"PyPI returned HTTP {response.status_code} for '{package_name}'")
+
+    if len(response.content) > _MAX_RESPONSE_SIZE:
+        raise PyPIRegistryError(f"Response for '{package_name}' exceeds {_MAX_RESPONSE_SIZE} bytes")
 
     try:
         data = response.json()

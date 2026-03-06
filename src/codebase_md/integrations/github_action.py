@@ -6,9 +6,10 @@ scan and generate on push/PR, optionally committing the changes.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class GitHubActionError(Exception):
@@ -44,6 +45,39 @@ class ActionConfig(BaseModel):
         default_factory=lambda: ["claude", "cursor", "agents", "codex", "windsurf", "generic"],
         description="Output formats to generate.",
     )
+
+    @field_validator("branches", mode="before")
+    @classmethod
+    def _validate_branches(cls, v: list[str]) -> list[str]:
+        """Validate branch names contain only safe characters."""
+        pattern = re.compile(r"^[a-zA-Z0-9._/\-]+$")
+        for branch in v:
+            if not pattern.match(branch):
+                msg = (
+                    f"Invalid branch name '{branch}': only alphanumeric, '.', '_', '/', '-' allowed"
+                )
+                raise ValueError(msg)
+        return v
+
+    @field_validator("formats", mode="before")
+    @classmethod
+    def _validate_formats(cls, v: list[str]) -> list[str]:
+        """Validate format names contain only safe characters."""
+        allowed = {"claude", "cursor", "agents", "codex", "windsurf", "generic"}
+        for fmt in v:
+            if fmt not in allowed:
+                msg = f"Invalid format '{fmt}': must be one of {sorted(allowed)}"
+                raise ValueError(msg)
+        return v
+
+    @field_validator("python_version", mode="before")
+    @classmethod
+    def _validate_python_version(cls, v: str) -> str:
+        """Validate Python version is a safe version string."""
+        if not re.match(r"^\d+\.\d+(\.\d+)?$", v):
+            msg = f"Invalid Python version '{v}': expected format like '3.11' or '3.11.0'"
+            raise ValueError(msg)
+        return v
 
 
 def generate_workflow(config: ActionConfig | None = None) -> str:

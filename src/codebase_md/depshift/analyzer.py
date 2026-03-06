@@ -8,6 +8,7 @@ and version gap, and enriching DependencyInfo with actionable data.
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass, field
 
 from codebase_md.depshift.registries.npm import (
     NpmRegistryError,
@@ -32,6 +33,7 @@ class DepShiftAnalyzerError(Exception):
     """Raised when dependency analysis fails."""
 
 
+@dataclass(frozen=True)
 class HealthReport:
     """Full health report for all project dependencies.
 
@@ -41,17 +43,12 @@ class HealthReport:
         warnings: Non-fatal issues encountered during analysis.
     """
 
-    def __init__(
-        self,
-        dependencies: list[DependencyInfo],
-        summary: HealthSummary,
-        warnings: list[str],
-    ) -> None:
-        self.dependencies = dependencies
-        self.summary = summary
-        self.warnings = warnings
+    dependencies: list[DependencyInfo] = field(default_factory=list)
+    summary: HealthSummary = field(default_factory=lambda: HealthSummary())
+    warnings: list[str] = field(default_factory=list)
 
 
+@dataclass(frozen=True)
 class HealthSummary:
     """Summary statistics for dependency health.
 
@@ -64,21 +61,12 @@ class HealthSummary:
         average_score: Average health score across all deps.
     """
 
-    def __init__(
-        self,
-        total: int = 0,
-        healthy: int = 0,
-        outdated: int = 0,
-        deprecated: int = 0,
-        unknown: int = 0,
-        average_score: float = 0.0,
-    ) -> None:
-        self.total = total
-        self.healthy = healthy
-        self.outdated = outdated
-        self.deprecated = deprecated
-        self.unknown = unknown
-        self.average_score = average_score
+    total: int = 0
+    healthy: int = 0
+    outdated: int = 0
+    deprecated: int = 0
+    unknown: int = 0
+    average_score: float = 0.0
 
 
 def analyze_dependencies(

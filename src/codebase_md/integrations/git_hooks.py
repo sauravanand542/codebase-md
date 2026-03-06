@@ -7,6 +7,7 @@ automatically re-scan and regenerate context files after git operations.
 from __future__ import annotations
 
 import os
+import shlex
 import stat
 from enum import StrEnum
 from pathlib import Path
@@ -21,7 +22,7 @@ HOOK_SCRIPT_TEMPLATE = """#!/bin/sh
 # Hook type: {hook_type}
 
 # Run codebase-md scan + generate
-codebase scan "{root_path}" && codebase generate "{root_path}"
+codebase scan {root_path} && codebase generate {root_path}
 """
 
 
@@ -116,11 +117,11 @@ def install_hook(root_path: Path, hook_type: HookType) -> Path:
             backup_path = hook_file.with_suffix(".backup")
             hook_file.rename(backup_path)
 
-        # Write the hook script
+        # Write the hook script (shlex.quote prevents shell injection)
         script = HOOK_SCRIPT_TEMPLATE.format(
             marker=HOOK_MARKER,
             hook_type=hook_type.value,
-            root_path=str(root_path),
+            root_path=shlex.quote(str(root_path)),
         )
         hook_file.write_text(script, encoding="utf-8")
 
