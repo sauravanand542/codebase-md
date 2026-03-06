@@ -10,7 +10,7 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
 authors = [
-    { name = "Saurav" },
+    { name = "Saurav", email = "anandsaurav668@gmail.com" },
 ]
 keywords = [
     "ai",
@@ -66,6 +66,7 @@ codebase = "codebase_md.cli:app"
 Homepage = "https://github.com/sauravanand542/codebase-md"
 Repository = "https://github.com/sauravanand542/codebase-md"
 Issues = "https://github.com/sauravanand542/codebase-md/issues"
+Changelog = "https://github.com/sauravanand542/codebase-md/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/codebase_md"]

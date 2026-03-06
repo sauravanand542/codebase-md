@@ -2,10 +2,11 @@
 
 **The universal project brain that works with every AI coding tool.**
 
+[![PyPI](https://img.shields.io/pypi/v/codebase-md)](https://pypi.org/project/codebase-md/)
 [![CI](https://github.com/sauravanand542/codebase-md/actions/workflows/ci.yml/badge.svg)](https://github.com/sauravanand542/codebase-md/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-173%20passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-354%20passed-brightgreen.svg)]()
 
 One command scans your codebase and generates context files for **Claude Code, Cursor, Codex, Windsurf**, and more — auto-detected conventions, dependency health, architecture maps, and smart context routing. Stays fresh via git hooks.
 
@@ -33,18 +34,67 @@ Writing and maintaining these manually is tedious. **codebase-md** scans your pr
 
 ---
 
+## v0.1.0 — Current Status
+
+> **Alpha release** — this is the first public release of codebase-md. Core functionality is working and tested, but APIs and output formats may change between minor versions. Please pin your version (`pip install codebase-md==0.1.0`) and [report issues](https://github.com/sauravanand542/codebase-md/issues).
+
+### What Works Well
+
+- **Single-command scan** — `codebase scan .` analyzes your entire project in seconds
+- **5 output formats** — CLAUDE.md, AGENTS.md, .cursorrules, codex.md, .windsurfrules (+ generic PROJECT_CONTEXT.md)
+- **Language detection** — Python, TypeScript, JavaScript, Go, Rust and 50+ file extensions
+- **Dependency parsing** — requirements.txt, pyproject.toml, package.json, go.mod, Cargo.toml, Gemfile
+- **Convention inference** — naming style, import patterns, file organization, design patterns (via tree-sitter AST)
+- **Architecture detection** — monolith, monorepo, microservice, library, CLI tool
+- **Git insights** — commit history, contributor analysis, file change hotspots
+- **Dependency health** — live registry queries (PyPI, npm) with health scoring and breaking change detection
+- **Smart context routing** — TF-IDF relevance scoring for query-based context retrieval
+
+### Known Limitations
+
+- **AST grammars** — tree-sitter support is limited to Python, JavaScript, and TypeScript; Go and Rust are parsed via heuristics
+- **No incremental mode** — every scan re-analyzes the full project (no watch/diff mode yet)
+- **Large monorepos** — projects with >10,000 files may experience slower scan times
+- **Network dependency** — DepShift registry queries (PyPI/npm health checks) require network access; use `--offline` to skip
+- **No Windows CI** — tested on Linux and macOS; Windows should work but is not yet part of CI
+
+### Tested Against
+
+The test suite (354 tests) validates against these project archetypes:
+
+| Fixture | Type | Languages |
+|---------|------|-----------|
+| Python CLI | CLI tool | Python |
+| FastAPI App | Web API | Python |
+| Next.js App | Full-stack | TypeScript, JavaScript |
+| Go CLI | CLI tool | Go |
+| Rust CLI | CLI tool | Rust |
+| Mixed Language | Multi-lang | Python, JS, Go |
+| Monorepo | Monorepo | Multiple |
+| Empty Repo | Edge case | — |
+
+Integration tests also run against real-world repositories (see [test_real_repos.py](tests/integration/test_real_repos.py)).
+
+---
+
 ## Installation
 
-### From GitHub (recommended for now)
+### From PyPI
 
 ```bash
-pip install git+https://github.com/sauravanand542/codebase-md.git
+pip install codebase-md
 ```
 
 ### With AST support (recommended)
 
 ```bash
-pip install "codebase-md[ast] @ git+https://github.com/sauravanand542/codebase-md.git"
+pip install "codebase-md[ast]"
+```
+
+### From GitHub (latest dev)
+
+```bash
+pip install git+https://github.com/sauravanand542/codebase-md.git
 ```
 
 ### For development
